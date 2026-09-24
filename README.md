@@ -60,10 +60,12 @@ Danach in `android/app/src/main/AndroidManifest.xml` prüfen, dass folgende Bere
 <uses-permission android:name="android.permission.CAMERA"/>
 ```
 
-Außerdem verlangt `flutter_local_notifications` **Core Library Desugaring** – ohne das bricht `flutter build apk` mit `Execution failed for task ':app:checkReleaseAarMetadata'` ab. An `android/app/build.gradle.kts` anhängen:
+Außerdem verlangen `flutter_local_notifications` **Core Library Desugaring** und `file_picker` (über `flutter_plugin_android_lifecycle`) **compileSdk 36** – ohne das bricht `flutter build apk` mit `Execution failed for task ':app:checkReleaseAarMetadata'` bzw. `':file_picker:checkReleaseAarMetadata'` ab. An `android/app/build.gradle.kts` anhängen:
 
 ```kotlin
 android {
+    compileSdk = 36
+
     compileOptions {
         isCoreLibraryDesugaringEnabled = true
     }

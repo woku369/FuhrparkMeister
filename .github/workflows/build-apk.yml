@@ -41,11 +41,13 @@ jobs:
             rm -f test/widget_test.dart
           fi
 
-      - name: Core Library Desugaring aktivieren (von flutter_local_notifications benötigt)
+      - name: Android-Gradle-Konfiguration nachschärfen (Desugaring, compileSdk)
         run: |
           cat >> android/app/build.gradle.kts <<'EOF'
 
           android {
+              compileSdk = 36
+
               compileOptions {
                   isCoreLibraryDesugaringEnabled = true
               }
