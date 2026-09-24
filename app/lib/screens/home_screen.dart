@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 
 import '../models/vehicle.dart';
@@ -17,19 +18,46 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  String? _versionLabel;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<FuhrparkProvider>().loadVehicles();
     });
+    _loadVersion();
+  }
+
+  Future<void> _loadVersion() async {
+    // Liest die tatsächlich installierte Version aus - zeigt also immer den
+    // echten versionCode des Geräts, nicht nur den zuletzt gebauten CI-Stand.
+    final info = await PackageInfo.fromPlatform();
+    if (mounted) {
+      setState(() => _versionLabel = 'v${info.version} (${info.buildNumber})');
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('FuhrparkMeister'),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('FuhrparkMeister'),
+            if (_versionLabel != null)
+              Text(
+                _versionLabel!,
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurfaceVariant,
+                    ),
+              ),
+          ],
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.notifications_outlined),
