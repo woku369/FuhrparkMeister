@@ -40,6 +40,13 @@ jobs:
             --build-name=1.0.0 \
             --build-number=${{ github.run_number }}
 
+      - name: APK-Signatur mit apksigner verifizieren (Diagnose Installationsfehler)
+        run: |
+          APKSIGNER=$(find "$ANDROID_HOME" -iname "apksigner" -type f | sort -V | tail -1)
+          echo "Verwende: $APKSIGNER"
+          "$APKSIGNER" verify --verbose --print-certs \
+            build/app/outputs/flutter-apk/app-release.apk
+
       - name: APK als Artefakt sichern
         uses: actions/upload-artifact@v4
         with:
