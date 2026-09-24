@@ -25,54 +25,12 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
-
-      - name: Android-Plattform-Ordner erzeugen (falls im Repo nicht vorhanden)
-        run: |
-          if [ ! -d android ]; then
-            flutter create . --platforms=android --org at.kraeutermeister
-            # Generischer Beispieltest von 'flutter create' passt nicht zu
-            # unserer App (referenziert Platzhalterklasse MyApp) - entfernen.
-            rm -f test/widget_test.dart
-          fi
-
-      - name: Festen Debug-Keystore direkt ins App-Modul kopieren
-        # Bewusst NICHT auf den impliziten Standardpfad ~/.android/debug.keystore
-        # verlassen: Auf den GitHub-Runner-Images liegt dort teils schon ein
-        # image-eigener Debug-Keystore, den Android Gradle Plugin statt unseres
-        # kopierten verwendet - jede APK wurde dadurch trotzdem mit wechselndem
-        # Schlüssel signiert (per Zertifikatsvergleich nachgewiesen: SHA-256 der
-        # gebauten APK wich vom SHA-256 unseres ci/debug.keystore ab). Stattdessen
-        # liegt die Datei jetzt im App-Modul selbst und wird unten explizit als
-        # Pfad referenziert - kein impliziter Konventionspfad mehr im Spiel.
-        run: cp ../ci/debug.keystore android/app/debug.keystore
-
-      - name: Core Library Desugaring + feste Signatur für Release-Build aktivieren
-        run: |
-          cat >> android/app/build.gradle.kts <<'EOF'
-
-          android {
-              signingConfigs {
-                  getByName("debug") {
-                      storeFile = file("debug.keystore")
-                      storePassword = "android"
-                      keyAlias = "androiddebugkey"
-                      keyPassword = "android"
-                  }
-              }
-              buildTypes {
-                  getByName("release") {
-                      signingConfig = signingConfigs.getByName("debug")
-                  }
-              }
-              compileOptions {
-                  isCoreLibraryDesugaringEnabled = true
-              }
-          }
-
-          dependencies {
-              coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
-          }
-          EOF
+          # Fest gepinnt statt 'channel: stable' allein: der android/-Ordner
+          # ist jetzt fest im Repo (siehe unten) statt bei jedem Lauf neu
+          # generiert - ohne feste Version könnte ein künftiges Flutter-
+          # Stable-Update Gradle-/AGP-Anforderungen ändern, die zum
+          # eingecheckten Projektstand nicht mehr passen.
+          flutter-version: 3.47.5
 
       - run: flutter pub get
       - run: flutter analyze
