@@ -108,8 +108,31 @@ class _InspectionsTabState extends State<InspectionsTab> {
   }
 
   Future<void> _delete(Inspection i) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Termin löschen?'),
+        content: Text('${i.type.label} vom ${i.faelligAm.deDate} wird entfernt.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Abbrechen'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Löschen'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
     await context.read<FuhrparkProvider>().deleteInspection(i.id);
     setState(_reload);
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Termin gelöscht')),
+      );
+    }
   }
 
   Future<void> _openForm({Inspection? existing}) async {
@@ -122,7 +145,14 @@ class _InspectionsTabState extends State<InspectionsTab> {
         existing: existing,
       ),
     );
-    if (result == true) setState(_reload);
+    if (result == true) {
+      setState(_reload);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Termin gespeichert')),
+        );
+      }
+    }
   }
 }
 
@@ -146,6 +176,7 @@ class _InspectionFormSheetState extends State<_InspectionFormSheet> {
   DateTime _faelligAm = DateTime.now().add(const Duration(days: 30));
   late final TextEditingController _erinnerungTage;
   late final TextEditingController _notizen;
+  bool _saving = false;
 
   @override
   void initState() {
@@ -216,7 +247,16 @@ class _InspectionFormSheetState extends State<_InspectionFormSheet> {
               maxLines: 2,
             ),
             const SizedBox(height: 20),
-            FilledButton(onPressed: _save, child: const Text('Speichern')),
+            FilledButton(
+              onPressed: _saving ? null : _save,
+              child: _saving
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('Speichern'),
+            ),
           ],
         ),
       ),
@@ -224,22 +264,28 @@ class _InspectionFormSheetState extends State<_InspectionFormSheet> {
   }
 
   Future<void> _save() async {
-    final provider = context.read<FuhrparkProvider>();
-    final inspection = Inspection(
-      id: widget.existing?.id ?? _uuid.v4(),
-      vehicleId: widget.vehicleId,
-      type: _type,
-      faelligAm: _faelligAm,
-      letztePruefungAm: widget.existing?.letztePruefungAm,
-      erinnerungTageVorher: int.tryParse(_erinnerungTage.text.trim()) ?? 30,
-      erledigt: widget.existing?.erledigt ?? false,
-      notizen: _notizen.text.trim().isEmpty ? null : _notizen.text.trim(),
-    );
-    await provider.saveInspection(
-      inspection,
-      widget.vehicleName,
-      isNew: widget.existing == null,
-    );
-    if (mounted) Navigator.of(context).pop(true);
+    if (_saving) return;
+    setState(() => _saving = true);
+    try {
+      final provider = context.read<FuhrparkProvider>();
+      final inspection = Inspection(
+        id: widget.existing?.id ?? _uuid.v4(),
+        vehicleId: widget.vehicleId,
+        type: _type,
+        faelligAm: _faelligAm,
+        letztePruefungAm: widget.existing?.letztePruefungAm,
+        erinnerungTageVorher: int.tryParse(_erinnerungTage.text.trim()) ?? 30,
+        erledigt: widget.existing?.erledigt ?? false,
+        notizen: _notizen.text.trim().isEmpty ? null : _notizen.text.trim(),
+      );
+      await provider.saveInspection(
+        inspection,
+        widget.vehicleName,
+        isNew: widget.existing == null,
+      );
+      if (mounted) Navigator.of(context).pop(true);
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
   }
 }

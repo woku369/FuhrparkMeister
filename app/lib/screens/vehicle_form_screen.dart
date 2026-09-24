@@ -28,6 +28,7 @@ class _VehicleFormScreenState extends State<VehicleFormScreen> {
   late final TextEditingController _sollDimension;
   late final TextEditingController _notizen;
   DateTime? _kaufdatum;
+  bool _saving = false;
 
   bool get _isEdit => widget.vehicle != null;
 
@@ -165,8 +166,14 @@ class _VehicleFormScreenState extends State<VehicleFormScreen> {
             ),
             const SizedBox(height: 24),
             FilledButton(
-              onPressed: _save,
-              child: const Text('Speichern'),
+              onPressed: _saving ? null : _save,
+              child: _saving
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('Speichern'),
             ),
           ],
         ),
@@ -185,48 +192,54 @@ class _VehicleFormScreenState extends State<VehicleFormScreen> {
   }
 
   Future<void> _save() async {
-    if (!_formKey.currentState!.validate()) return;
-    final provider = context.read<FuhrparkProvider>();
+    if (_saving || !_formKey.currentState!.validate()) return;
+    setState(() => _saving = true);
+    try {
+      final provider = context.read<FuhrparkProvider>();
 
-    if (_isEdit) {
-      final v = widget.vehicle!;
-      v.type = _type;
-      v.name = _name.text.trim();
-      v.marke = _marke.text.trim().isEmpty ? null : _marke.text.trim();
-      v.modell = _modell.text.trim().isEmpty ? null : _modell.text.trim();
-      v.kennzeichen =
-          _kennzeichen.text.trim().isEmpty ? null : _kennzeichen.text.trim();
-      v.fahrgestellnummer = _fahrgestellnummer.text.trim().isEmpty
-          ? null
-          : _fahrgestellnummer.text.trim();
-      v.baujahr = int.tryParse(_baujahr.text.trim());
-      v.farbe = _farbe.text.trim().isEmpty ? null : _farbe.text.trim();
-      v.kaufdatum = _kaufdatum;
-      v.sollReifendimension =
-          _sollDimension.text.trim().isEmpty ? null : _sollDimension.text.trim();
-      v.notizen = _notizen.text.trim().isEmpty ? null : _notizen.text.trim();
-      await provider.updateVehicle(v);
-    } else {
-      await provider.addVehicle(
-        type: _type,
-        name: _name.text.trim(),
-        marke: _marke.text.trim().isEmpty ? null : _marke.text.trim(),
-        modell: _modell.text.trim().isEmpty ? null : _modell.text.trim(),
-        kennzeichen:
-            _kennzeichen.text.trim().isEmpty ? null : _kennzeichen.text.trim(),
-        fahrgestellnummer: _fahrgestellnummer.text.trim().isEmpty
+      if (_isEdit) {
+        final v = widget.vehicle!;
+        v.type = _type;
+        v.name = _name.text.trim();
+        v.marke = _marke.text.trim().isEmpty ? null : _marke.text.trim();
+        v.modell = _modell.text.trim().isEmpty ? null : _modell.text.trim();
+        v.kennzeichen =
+            _kennzeichen.text.trim().isEmpty ? null : _kennzeichen.text.trim();
+        v.fahrgestellnummer = _fahrgestellnummer.text.trim().isEmpty
             ? null
-            : _fahrgestellnummer.text.trim(),
-        baujahr: int.tryParse(_baujahr.text.trim()),
-        farbe: _farbe.text.trim().isEmpty ? null : _farbe.text.trim(),
-        kaufdatum: _kaufdatum,
-        sollReifendimension: _sollDimension.text.trim().isEmpty
+            : _fahrgestellnummer.text.trim();
+        v.baujahr = int.tryParse(_baujahr.text.trim());
+        v.farbe = _farbe.text.trim().isEmpty ? null : _farbe.text.trim();
+        v.kaufdatum = _kaufdatum;
+        v.sollReifendimension = _sollDimension.text.trim().isEmpty
             ? null
-            : _sollDimension.text.trim(),
-        notizen: _notizen.text.trim().isEmpty ? null : _notizen.text.trim(),
-      );
+            : _sollDimension.text.trim();
+        v.notizen = _notizen.text.trim().isEmpty ? null : _notizen.text.trim();
+        await provider.updateVehicle(v);
+      } else {
+        await provider.addVehicle(
+          type: _type,
+          name: _name.text.trim(),
+          marke: _marke.text.trim().isEmpty ? null : _marke.text.trim(),
+          modell: _modell.text.trim().isEmpty ? null : _modell.text.trim(),
+          kennzeichen:
+              _kennzeichen.text.trim().isEmpty ? null : _kennzeichen.text.trim(),
+          fahrgestellnummer: _fahrgestellnummer.text.trim().isEmpty
+              ? null
+              : _fahrgestellnummer.text.trim(),
+          baujahr: int.tryParse(_baujahr.text.trim()),
+          farbe: _farbe.text.trim().isEmpty ? null : _farbe.text.trim(),
+          kaufdatum: _kaufdatum,
+          sollReifendimension: _sollDimension.text.trim().isEmpty
+              ? null
+              : _sollDimension.text.trim(),
+          notizen: _notizen.text.trim().isEmpty ? null : _notizen.text.trim(),
+        );
+      }
+
+      if (mounted) Navigator.of(context).pop();
+    } finally {
+      if (mounted) setState(() => _saving = false);
     }
-
-    if (mounted) Navigator.of(context).pop();
   }
 }

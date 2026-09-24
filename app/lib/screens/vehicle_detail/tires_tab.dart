@@ -143,6 +143,7 @@ class _TireFormSheetState extends State<_TireFormSheet> {
   late bool _montiert;
   DateTime? _wechselFaelligAm;
   late final TextEditingController _notizen;
+  bool _saving = false;
 
   @override
   void initState() {
@@ -234,7 +235,16 @@ class _TireFormSheetState extends State<_TireFormSheet> {
               maxLines: 2,
             ),
             const SizedBox(height: 20),
-            FilledButton(onPressed: _save, child: const Text('Speichern')),
+            FilledButton(
+              onPressed: _saving ? null : _save,
+              child: _saving
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('Speichern'),
+            ),
           ],
         ),
       ),
@@ -242,21 +252,26 @@ class _TireFormSheetState extends State<_TireFormSheet> {
   }
 
   Future<void> _save() async {
-    if (_dimension.text.trim().isEmpty) return;
-    final provider = context.read<FuhrparkProvider>();
-    final tireSet = TireSet(
-      id: widget.existing?.id ?? _uuid.v4(),
-      vehicleId: widget.vehicleId,
-      season: _season,
-      dimension: _dimension.text.trim(),
-      hersteller: _hersteller.text.trim().isEmpty ? null : _hersteller.text.trim(),
-      profiltiefeMm: double.tryParse(_profiltiefe.text.trim().replaceAll(',', '.')),
-      montiert: _montiert,
-      kaufdatum: widget.existing?.kaufdatum,
-      wechselFaelligAm: _wechselFaelligAm,
-      notizen: _notizen.text.trim().isEmpty ? null : _notizen.text.trim(),
-    );
-    await provider.saveTireSet(tireSet, isNew: widget.existing == null);
-    if (mounted) Navigator.of(context).pop(true);
+    if (_saving || _dimension.text.trim().isEmpty) return;
+    setState(() => _saving = true);
+    try {
+      final provider = context.read<FuhrparkProvider>();
+      final tireSet = TireSet(
+        id: widget.existing?.id ?? _uuid.v4(),
+        vehicleId: widget.vehicleId,
+        season: _season,
+        dimension: _dimension.text.trim(),
+        hersteller: _hersteller.text.trim().isEmpty ? null : _hersteller.text.trim(),
+        profiltiefeMm: double.tryParse(_profiltiefe.text.trim().replaceAll(',', '.')),
+        montiert: _montiert,
+        kaufdatum: widget.existing?.kaufdatum,
+        wechselFaelligAm: _wechselFaelligAm,
+        notizen: _notizen.text.trim().isEmpty ? null : _notizen.text.trim(),
+      );
+      await provider.saveTireSet(tireSet, isNew: widget.existing == null);
+      if (mounted) Navigator.of(context).pop(true);
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
   }
 }

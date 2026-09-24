@@ -219,6 +219,7 @@ class _VignetteFormSheetState extends State<_VignetteFormSheet> {
   late final TextEditingController _preis;
   bool _digital = true;
   late final TextEditingController _notizen;
+  bool _saving = false;
 
   @override
   void initState() {
@@ -286,7 +287,16 @@ class _VignetteFormSheetState extends State<_VignetteFormSheet> {
               maxLines: 2,
             ),
             const SizedBox(height: 20),
-            FilledButton(onPressed: _save, child: const Text('Speichern')),
+            FilledButton(
+              onPressed: _saving ? null : _save,
+              child: _saving
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('Speichern'),
+            ),
           ],
         ),
       ),
@@ -294,24 +304,30 @@ class _VignetteFormSheetState extends State<_VignetteFormSheet> {
   }
 
   Future<void> _save() async {
-    final provider = context.read<FuhrparkProvider>();
-    final vignette = Vignette(
-      id: widget.existing?.id ?? _uuid.v4(),
-      vehicleId: widget.vehicleId,
-      jahr: int.tryParse(_jahr.text.trim()) ?? DateTime.now().year,
-      gueltigVon: _gueltigVon,
-      gueltigBis: _gueltigBis,
-      kaufdatum: widget.existing?.kaufdatum,
-      preisEuro: double.tryParse(_preis.text.trim().replaceAll(',', '.')),
-      digital: _digital,
-      notizen: _notizen.text.trim().isEmpty ? null : _notizen.text.trim(),
-    );
-    await provider.saveVignette(
-      vignette,
-      widget.vehicleName,
-      isNew: widget.existing == null,
-    );
-    if (mounted) Navigator.of(context).pop(true);
+    if (_saving) return;
+    setState(() => _saving = true);
+    try {
+      final provider = context.read<FuhrparkProvider>();
+      final vignette = Vignette(
+        id: widget.existing?.id ?? _uuid.v4(),
+        vehicleId: widget.vehicleId,
+        jahr: int.tryParse(_jahr.text.trim()) ?? DateTime.now().year,
+        gueltigVon: _gueltigVon,
+        gueltigBis: _gueltigBis,
+        kaufdatum: widget.existing?.kaufdatum,
+        preisEuro: double.tryParse(_preis.text.trim().replaceAll(',', '.')),
+        digital: _digital,
+        notizen: _notizen.text.trim().isEmpty ? null : _notizen.text.trim(),
+      );
+      await provider.saveVignette(
+        vignette,
+        widget.vehicleName,
+        isNew: widget.existing == null,
+      );
+      if (mounted) Navigator.of(context).pop(true);
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
   }
 }
 
@@ -337,6 +353,7 @@ class _InsuranceFormSheetState extends State<_InsuranceFormSheet> {
   DateTime? _faelligkeitJaehrlichAm;
   late final TextEditingController _praemie;
   late final TextEditingController _notizen;
+  bool _saving = false;
 
   @override
   void initState() {
@@ -408,7 +425,16 @@ class _InsuranceFormSheetState extends State<_InsuranceFormSheet> {
               maxLines: 2,
             ),
             const SizedBox(height: 20),
-            FilledButton(onPressed: _save, child: const Text('Speichern')),
+            FilledButton(
+              onPressed: _saving ? null : _save,
+              child: _saving
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('Speichern'),
+            ),
           ],
         ),
       ),
@@ -416,27 +442,33 @@ class _InsuranceFormSheetState extends State<_InsuranceFormSheet> {
   }
 
   Future<void> _save() async {
+    if (_saving) return;
     if (_gesellschaft.text.trim().isEmpty || _polizzennummer.text.trim().isEmpty) {
       return;
     }
-    final provider = context.read<FuhrparkProvider>();
-    final insurance = Insurance(
-      id: widget.existing?.id ?? _uuid.v4(),
-      vehicleId: widget.vehicleId,
-      gesellschaft: _gesellschaft.text.trim(),
-      polizzennummer: _polizzennummer.text.trim(),
-      type: _type,
-      gueltigAb: widget.existing?.gueltigAb,
-      faelligkeitJaehrlichAm: _faelligkeitJaehrlichAm,
-      praemieEuro: double.tryParse(_praemie.text.trim().replaceAll(',', '.')),
-      notizen: _notizen.text.trim().isEmpty ? null : _notizen.text.trim(),
-    );
-    await provider.saveInsurance(
-      insurance,
-      widget.vehicleName,
-      isNew: widget.existing == null,
-    );
-    if (mounted) Navigator.of(context).pop(true);
+    setState(() => _saving = true);
+    try {
+      final provider = context.read<FuhrparkProvider>();
+      final insurance = Insurance(
+        id: widget.existing?.id ?? _uuid.v4(),
+        vehicleId: widget.vehicleId,
+        gesellschaft: _gesellschaft.text.trim(),
+        polizzennummer: _polizzennummer.text.trim(),
+        type: _type,
+        gueltigAb: widget.existing?.gueltigAb,
+        faelligkeitJaehrlichAm: _faelligkeitJaehrlichAm,
+        praemieEuro: double.tryParse(_praemie.text.trim().replaceAll(',', '.')),
+        notizen: _notizen.text.trim().isEmpty ? null : _notizen.text.trim(),
+      );
+      await provider.saveInsurance(
+        insurance,
+        widget.vehicleName,
+        isNew: widget.existing == null,
+      );
+      if (mounted) Navigator.of(context).pop(true);
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
   }
 }
 
