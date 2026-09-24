@@ -4,6 +4,7 @@ import 'package:uuid/uuid.dart';
 import '../database/database_helper.dart';
 import '../models/inspection.dart';
 import '../models/insurance.dart';
+import '../models/maintenance_task.dart';
 import '../models/reminder.dart';
 import '../models/tire_set.dart';
 import '../models/vehicle.dart';
@@ -239,6 +240,28 @@ class FuhrparkProvider extends ChangeNotifier {
 
   Future<void> deleteDocument(String id) async {
     await _db.deleteDocument(id);
+    notifyListeners();
+  }
+
+  // ---------------- Wartungs-To-Dos ----------------
+
+  Future<List<MaintenanceTask>> maintenanceTasksFor(String vehicleId) =>
+      _db.getMaintenanceTasksForVehicle(vehicleId);
+
+  Future<void> saveMaintenanceTask(
+    MaintenanceTask task, {
+    required bool isNew,
+  }) async {
+    if (isNew) {
+      await _db.insertMaintenanceTask(task);
+    } else {
+      await _db.updateMaintenanceTask(task);
+    }
+    notifyListeners();
+  }
+
+  Future<void> deleteMaintenanceTask(String id) async {
+    await _db.deleteMaintenanceTask(id);
     notifyListeners();
   }
 

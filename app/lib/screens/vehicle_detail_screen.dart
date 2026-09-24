@@ -5,6 +5,7 @@ import '../models/vehicle.dart';
 import '../providers/fuhrpark_provider.dart';
 import 'vehicle_detail/documents_tab.dart';
 import 'vehicle_detail/inspections_tab.dart';
+import 'vehicle_detail/maintenance_tab.dart';
 import 'vehicle_detail/overview_tab.dart';
 import 'vehicle_detail/tires_tab.dart';
 import 'vehicle_detail/vignette_insurance_tab.dart';
@@ -29,7 +30,7 @@ class VehicleDetailScreen extends StatelessWidget {
     final v = vehicle;
 
     return DefaultTabController(
-      length: 5,
+      length: 6,
       child: Scaffold(
         appBar: AppBar(
           title: Text(v.anzeigename),
@@ -62,6 +63,7 @@ class VehicleDetailScreen extends StatelessWidget {
               Tab(text: 'Termine'),
               Tab(text: 'Vignette & Versicherung'),
               Tab(text: 'Dokumente'),
+              Tab(text: 'To-Do'),
             ],
           ),
         ),
@@ -72,6 +74,7 @@ class VehicleDetailScreen extends StatelessWidget {
             InspectionsTab(vehicle: v),
             VignetteInsuranceTab(vehicle: v),
             DocumentsTab(vehicle: v),
+            MaintenanceTab(vehicle: v),
           ],
         ),
       ),

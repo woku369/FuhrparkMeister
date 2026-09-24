@@ -28,6 +28,7 @@ Fuhrparkverwaltung für **Autos, Anhänger, Motorräder, Wohnwagen und Fahrräde
 - **Vignetten**: Jahr, Gültigkeitszeitraum, Preis, digital/klassisch – Erinnerung 14 Tage vor Ablauf
 - **Versicherungen**: Gesellschaft, Polizzennummer, Art (Haftpflicht/Teilkasko/Vollkasko), jährliche Fälligkeit, Prämie – Erinnerung 14 Tage vorher
 - **Dokumenten-Galerie**: Fotos von Zulassungsschein, Polizze, Rechnungen etc. je Fahrzeug, kategorisiert, lokal gespeichert
+- **Wartungs-To-Dos**: freie Checkliste je Fahrzeug für Dinge, die auffallen oder geplant sind, unabhängig von Prüfterminen (z. B. "Bremsbeläge Anhänger prüfen")
 - **Termine-Übersicht**: alle offenen Fälligkeiten fahrzeugübergreifend, farblich nach Dringlichkeit sortiert
 - **Offline-fähig**: lokale SQLite-Datenbank als primärer Datenspeicher
 - **Lokales ZIP-Backup**: Export/Import ohne jede Einrichtung – Export legt die Datei im App-eigenen Ordner ab und öffnet zusätzlich die Android-Systemfreigabe (Downloads, E-Mail, andere Cloud-Apps, ...), Import liest die neueste ZIP-Datei aus diesem Ordner ein
@@ -142,8 +143,11 @@ betrifft):
 | `vignettes` | Vignetten je Fahrzeug und Jahr |
 | `insurances` | Versicherungspolizzen je Fahrzeug |
 | `documents` | Foto-Galerie je Fahrzeug (Pfad auf lokalem Dateisystem) |
+| `maintenance_tasks` | Freie Wartungs-To-Dos je Fahrzeug, ohne Fälligkeitsdatum |
 
 Alle Kind-Tabellen hängen per `ON DELETE CASCADE` an `vehicles` – Fahrzeug löschen entfernt automatisch alle zugehörigen Daten.
+
+`maintenance_tasks` kam nachträglich per DB-Schema-Migration (Version 1 → 2, `onUpgrade` in `database_helper.dart`) dazu – bereits installierte Apps bekommen die Tabelle beim nächsten Start automatisch ergänzt, ohne Datenverlust.
 
 ---
 

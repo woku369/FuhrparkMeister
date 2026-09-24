@@ -3,6 +3,7 @@ import 'package:sqflite/sqflite.dart';
 
 import '../models/inspection.dart';
 import '../models/insurance.dart';
+import '../models/maintenance_task.dart';
 import '../models/tire_set.dart';
 import '../models/vehicle.dart';
 import '../models/vehicle_document.dart';
@@ -13,7 +14,21 @@ class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._();
 
   static const _dbName = 'fuhrparkmeister.db';
-  static const _dbVersion = 1;
+  static const _dbVersion = 2;
+
+  static const _createMaintenanceTasksTable = '''
+    CREATE TABLE maintenance_tasks (
+      id TEXT PRIMARY KEY,
+      vehicle_id TEXT NOT NULL REFERENCES vehicles(id) ON DELETE CASCADE,
+      titel TEXT NOT NULL,
+      notizen TEXT,
+      erledigt INTEGER NOT NULL DEFAULT 0,
+      erstellt_am TEXT NOT NULL,
+      erledigt_am TEXT
+    )
+  ''';
+  static const _createMaintenanceTasksIndex =
+      'CREATE INDEX idx_maintenance_tasks_vehicle ON maintenance_tasks(vehicle_id)';
 
   Database? _db;
 
@@ -110,6 +125,7 @@ class DatabaseHelper {
             notizen TEXT
           )
         ''');
+        await db.execute(_createMaintenanceTasksTable);
         await db.execute(
           'CREATE INDEX idx_tire_sets_vehicle ON tire_sets(vehicle_id)',
         );
@@ -125,6 +141,13 @@ class DatabaseHelper {
         await db.execute(
           'CREATE INDEX idx_documents_vehicle ON documents(vehicle_id)',
         );
+        await db.execute(_createMaintenanceTasksIndex);
+      },
+      onUpgrade: (db, oldVersion, newVersion) async {
+        if (oldVersion < 2) {
+          await db.execute(_createMaintenanceTasksTable);
+          await db.execute(_createMaintenanceTasksIndex);
+        }
       },
     );
   }
@@ -349,6 +372,45 @@ class DatabaseHelper {
     return rows.map(VehicleDocument.fromMap).toList();
   }
 
+  // ---------------- Maintenance-To-Dos ----------------
+
+  Future<void> insertMaintenanceTask(MaintenanceTask t) async {
+    final db = await database;
+    await db.insert(
+      'maintenance_tasks',
+      t.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  Future<void> updateMaintenanceTask(MaintenanceTask t) async {
+    final db = await database;
+    await db.update(
+      'maintenance_tasks',
+      t.toMap(),
+      where: 'id = ?',
+      whereArgs: [t.id],
+    );
+  }
+
+  Future<void> deleteMaintenanceTask(String id) async {
+    final db = await database;
+    await db.delete('maintenance_tasks', where: 'id = ?', whereArgs: [id]);
+  }
+
+  Future<List<MaintenanceTask>> getMaintenanceTasksForVehicle(
+    String vehicleId,
+  ) async {
+    final db = await database;
+    final rows = await db.query(
+      'maintenance_tasks',
+      where: 'vehicle_id = ?',
+      whereArgs: [vehicleId],
+      orderBy: 'erledigt ASC, erstellt_am DESC',
+    );
+    return rows.map(MaintenanceTask.fromMap).toList();
+  }
+
   // ---------------- Export / Import (Backup & Sync) ----------------
 
   static const backupTables = [
@@ -358,6 +420,7 @@ class DatabaseHelper {
     'vignettes',
     'insurances',
     'documents',
+    'maintenance_tasks',
   ];
 
   /// Liefert den kompletten Inhalt aller Tabellen als Rohdaten - direkt
