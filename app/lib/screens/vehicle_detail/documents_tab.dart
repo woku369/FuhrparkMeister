@@ -172,6 +172,7 @@ class _DocumentsTabState extends State<DocumentsTab> {
       titel: meta.titel,
       erstelltAm: DateTime.now(),
     );
+    if (!mounted) return;
     await context.read<FuhrparkProvider>().addDocument(document);
     if (mounted) setState(_reload);
   }
