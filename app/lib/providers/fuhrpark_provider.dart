@@ -83,16 +83,21 @@ class FuhrparkProvider extends ChangeNotifier {
 
   Future<void> deleteVehicle(String id) async {
     final inspections = await _db.getInspectionsForVehicle(id);
-    for (final i in inspections) {
-      await NotificationService.instance.cancelReminder(i.id);
-    }
     final vignettes = await _db.getVignettesForVehicle(id);
-    for (final v in vignettes) {
-      await NotificationService.instance.cancelReminder(v.id);
-    }
     final insurances = await _db.getInsurancesForVehicle(id);
-    for (final i in insurances) {
-      await NotificationService.instance.cancelReminder(i.id);
+    try {
+      for (final i in inspections) {
+        await NotificationService.instance.cancelReminder(i.id);
+      }
+      for (final v in vignettes) {
+        await NotificationService.instance.cancelReminder(v.id);
+      }
+      for (final i in insurances) {
+        await NotificationService.instance.cancelReminder(i.id);
+      }
+    } catch (_) {
+      // Erinnerungen sind nur eine Zusatzfunktion - ein Fehler hier darf
+      // das Löschen des Fahrzeugs nicht verhindern.
     }
     await _db.deleteVehicle(id);
     await loadVehicles();
@@ -138,25 +143,37 @@ class FuhrparkProvider extends ChangeNotifier {
 
   Future<void> deleteInspection(String id) async {
     await _db.deleteInspection(id);
-    await NotificationService.instance.cancelReminder(id);
+    try {
+      await NotificationService.instance.cancelReminder(id);
+    } catch (_) {
+      // Erinnerung ist nur eine Zusatzfunktion - darf das Löschen nicht blockieren.
+    }
     notifyListeners();
   }
 
+  /// Erinnerung neu planen. Bewusst mit try-catch abgesichert: ein Fehler
+  /// im Benachrichtigungs-Plugin (z. B. fehlende Berechtigung) darf den
+  /// eigentlichen Speichervorgang und damit den Rücksprung im UI (Navigator.pop)
+  /// niemals verhindern.
   Future<void> _rescheduleInspection(
     Inspection inspection,
     String vehicleName,
   ) async {
-    await NotificationService.instance.cancelReminder(inspection.id);
-    if (inspection.erledigt) return;
-    final erinnerungAm = inspection.faelligAm.subtract(
-      Duration(days: inspection.erinnerungTageVorher),
-    );
-    await NotificationService.instance.scheduleReminder(
-      sourceId: inspection.id,
-      title: '${inspection.type.label} fällig',
-      body: '$vehicleName · fällig am ${_formatDate(inspection.faelligAm)}',
-      scheduledDate: erinnerungAm,
-    );
+    try {
+      await NotificationService.instance.cancelReminder(inspection.id);
+      if (inspection.erledigt) return;
+      final erinnerungAm = inspection.faelligAm.subtract(
+        Duration(days: inspection.erinnerungTageVorher),
+      );
+      await NotificationService.instance.scheduleReminder(
+        sourceId: inspection.id,
+        title: '${inspection.type.label} fällig',
+        body: '$vehicleName · fällig am ${_formatDate(inspection.faelligAm)}',
+        scheduledDate: erinnerungAm,
+      );
+    } catch (_) {
+      // siehe Kommentar oben
+    }
   }
 
   // ---------------- Vignettes ----------------
@@ -174,23 +191,32 @@ class FuhrparkProvider extends ChangeNotifier {
     } else {
       await _db.updateVignette(vignette);
     }
-    await NotificationService.instance.cancelReminder(vignette.id);
-    final erinnerungAm = vignette.gueltigBis.subtract(
-      const Duration(days: _vignetteInsuranceReminderTage),
-    );
-    await NotificationService.instance.scheduleReminder(
-      sourceId: vignette.id,
-      title: 'Vignette läuft ab',
-      body:
-          '$vehicleName · gültig bis ${_formatDate(vignette.gueltigBis)}',
-      scheduledDate: erinnerungAm,
-    );
+    try {
+      await NotificationService.instance.cancelReminder(vignette.id);
+      final erinnerungAm = vignette.gueltigBis.subtract(
+        const Duration(days: _vignetteInsuranceReminderTage),
+      );
+      await NotificationService.instance.scheduleReminder(
+        sourceId: vignette.id,
+        title: 'Vignette läuft ab',
+        body:
+            '$vehicleName · gültig bis ${_formatDate(vignette.gueltigBis)}',
+        scheduledDate: erinnerungAm,
+      );
+    } catch (_) {
+      // Erinnerung ist nur eine Zusatzfunktion - darf den Speichervorgang
+      // (und damit den Rücksprung im UI) nicht blockieren.
+    }
     notifyListeners();
   }
 
   Future<void> deleteVignette(String id) async {
     await _db.deleteVignette(id);
-    await NotificationService.instance.cancelReminder(id);
+    try {
+      await NotificationService.instance.cancelReminder(id);
+    } catch (_) {
+      // siehe Kommentar in saveVignette
+    }
     notifyListeners();
   }
 
@@ -209,26 +235,35 @@ class FuhrparkProvider extends ChangeNotifier {
     } else {
       await _db.updateInsurance(insurance);
     }
-    await NotificationService.instance.cancelReminder(insurance.id);
-    if (insurance.faelligkeitJaehrlichAm != null) {
-      final erinnerungAm = insurance.faelligkeitJaehrlichAm!.subtract(
-        const Duration(days: _vignetteInsuranceReminderTage),
-      );
-      await NotificationService.instance.scheduleReminder(
-        sourceId: insurance.id,
-        title: 'Versicherung fällig',
-        body:
-            '$vehicleName · ${insurance.gesellschaft} · fällig am '
-            '${_formatDate(insurance.faelligkeitJaehrlichAm!)}',
-        scheduledDate: erinnerungAm,
-      );
+    try {
+      await NotificationService.instance.cancelReminder(insurance.id);
+      if (insurance.faelligkeitJaehrlichAm != null) {
+        final erinnerungAm = insurance.faelligkeitJaehrlichAm!.subtract(
+          const Duration(days: _vignetteInsuranceReminderTage),
+        );
+        await NotificationService.instance.scheduleReminder(
+          sourceId: insurance.id,
+          title: 'Versicherung fällig',
+          body:
+              '$vehicleName · ${insurance.gesellschaft} · fällig am '
+              '${_formatDate(insurance.faelligkeitJaehrlichAm!)}',
+          scheduledDate: erinnerungAm,
+        );
+      }
+    } catch (_) {
+      // Erinnerung ist nur eine Zusatzfunktion - darf den Speichervorgang
+      // (und damit den Rücksprung im UI) nicht blockieren.
     }
     notifyListeners();
   }
 
   Future<void> deleteInsurance(String id) async {
     await _db.deleteInsurance(id);
-    await NotificationService.instance.cancelReminder(id);
+    try {
+      await NotificationService.instance.cancelReminder(id);
+    } catch (_) {
+      // siehe Kommentar in saveInsurance
+    }
     notifyListeners();
   }
 
