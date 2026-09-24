@@ -60,7 +60,7 @@ Danach in `android/app/src/main/AndroidManifest.xml` prüfen, dass folgende Bere
 <uses-permission android:name="android.permission.CAMERA"/>
 ```
 
-Außerdem verlangen `flutter_local_notifications` **Core Library Desugaring** und `file_picker` (über `flutter_plugin_android_lifecycle`) **compileSdk 36** – ohne das bricht `flutter build apk` mit `Execution failed for task ':app:checkReleaseAarMetadata'` bzw. `':file_picker:checkReleaseAarMetadata'` ab. An `android/app/build.gradle.kts` anhängen:
+Außerdem verlangt `flutter_local_notifications` **Core Library Desugaring** – ohne das bricht `flutter build apk` mit `Execution failed for task ':app:checkReleaseAarMetadata'` ab. An `android/app/build.gradle.kts` anhängen:
 
 ```kotlin
 android {
@@ -76,17 +76,7 @@ dependencies {
 }
 ```
 
-Das `compileSdk = 36` in `android/app/build.gradle.kts` betrifft nur unser eigenes App-Modul. Plugins wie `file_picker` bringen ein **eigenes** Gradle-Subprojekt mit, das den von der Flutter-SDK-Vorlage vorgegebenen (niedrigeren) `compileSdk` verwendet – deshalb zusätzlich an `android/build.gradle.kts` (Root, nicht `app/`) anhängen:
-
-```kotlin
-subprojects {
-    afterEvaluate {
-        extensions.findByType(com.android.build.gradle.BaseExtension::class.java)?.let {
-            it.compileSdkVersion(36)
-        }
-    }
-}
-```
+**Hinweis zu `file_picker`:** Neuere `file_picker`-Versionen bringen über `flutter_plugin_android_lifecycle` eine Anforderung von `compileSdk 36` für das Plugin-eigene Gradle-Subprojekt mit – das lässt sich vom App-Modul aus nicht sauber/zuverlässig überschreiben (ein `subprojects { afterEvaluate { ... } }`-Workaround scheitert reproduzierbar an "Cannot run Project.afterEvaluate(Action) when the project is already evaluated"). Deshalb ist `file_picker` in der `pubspec.yaml` bewusst exakt auf `8.1.2` gepinnt (keine Caret-Version), eine Version vor dieser Anforderung. Bei einem gewollten Upgrade auf eine neuere `file_picker`-Version diesen Punkt im Hinterkopf behalten.
 
 ### Starten / Bauen
 
