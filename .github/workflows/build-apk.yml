@@ -47,6 +47,13 @@ jobs:
           "$APKSIGNER" verify --verbose --print-certs \
             build/app/outputs/flutter-apk/app-release.apk
 
+      - name: APK-Metadaten (minSdk/targetSdk/ABIs) mit aapt2 ausgeben (Diagnose)
+        run: |
+          AAPT2=$(find "$ANDROID_HOME" -iname "aapt2" -type f | sort -V | tail -1)
+          echo "Verwende: $AAPT2"
+          "$AAPT2" dump badging build/app/outputs/flutter-apk/app-release.apk \
+            | grep -E "sdkVersion|targetSdkVersion|native-code|application-label"
+
       - name: APK als Artefakt sichern
         uses: actions/upload-artifact@v4
         with:
