@@ -59,6 +59,20 @@ Danach in `android/app/src/main/AndroidManifest.xml` prüfen, dass folgende Bere
 <uses-permission android:name="android.permission.CAMERA"/>
 ```
 
+Außerdem verlangt `flutter_local_notifications` **Core Library Desugaring** – ohne das bricht `flutter build apk` mit `Execution failed for task ':app:checkReleaseAarMetadata'` ab. An `android/app/build.gradle.kts` anhängen:
+
+```kotlin
+android {
+    compileOptions {
+        isCoreLibraryDesugaringEnabled = true
+    }
+}
+
+dependencies {
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
+}
+```
+
 ### Starten / Bauen
 
 ```bash
