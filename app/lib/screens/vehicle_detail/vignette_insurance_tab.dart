@@ -240,7 +240,9 @@ class _VignetteFormSheetState extends State<_VignetteFormSheet> {
         left: 16,
         right: 16,
         top: 16,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+        bottom: MediaQuery.of(context).viewInsets.bottom +
+            MediaQuery.of(context).padding.bottom +
+            16,
       ),
       child: SingleChildScrollView(
         child: Column(
@@ -374,7 +376,9 @@ class _InsuranceFormSheetState extends State<_InsuranceFormSheet> {
         left: 16,
         right: 16,
         top: 16,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+        bottom: MediaQuery.of(context).viewInsets.bottom +
+            MediaQuery.of(context).padding.bottom +
+            16,
       ),
       child: SingleChildScrollView(
         child: Column(
