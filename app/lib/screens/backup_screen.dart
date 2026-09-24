@@ -54,11 +54,15 @@ class _BackupScreenState extends State<BackupScreen> {
                     'Funktioniert sofort, ohne Google-Konto-Einrichtung. '
                     'Export erzeugt eine ZIP-Datei mit allen Daten und Fotos '
                     'im App-eigenen Ordner und öffnet zusätzlich die '
-                    'Android-Systemfreigabe (Downloads, E-Mail, eine '
-                    'Cloud-App, ...). Import liest die neueste ZIP-Datei aus '
-                    'genau diesem Ordner und ersetzt den kompletten lokalen '
-                    'Stand – eine von einem anderen Gerät empfangene Datei '
-                    'also vorher per Datei-Manager dorthin kopieren.',
+                    'Android-Systemfreigabe. Soll die Datei in Downloads '
+                    'landen: im Freigabe-Dialog "Dateien" (oder deinen '
+                    'Datei-Manager) wählen und dort Downloads als Ziel '
+                    'auswählen – Android erlaubt Apps keinen direkten '
+                    'Zugriff auf den Downloads-Ordner, dieser Zwischenschritt '
+                    'ist derzeit nötig. Import liest die neueste ZIP-Datei '
+                    'aus dem App-eigenen Ordner und ersetzt den kompletten '
+                    'lokalen Stand – eine von einem anderen Gerät empfangene '
+                    'Datei also vorher per Datei-Manager dorthin kopieren.',
                   ),
                   if (_backupDirPath != null) ...[
                     const SizedBox(height: 8),
