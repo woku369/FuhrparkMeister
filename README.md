@@ -76,7 +76,17 @@ dependencies {
 }
 ```
 
-**Hinweis zu `file_picker`:** Neuere `file_picker`-Versionen bringen über `flutter_plugin_android_lifecycle` eine Anforderung von `compileSdk 36` für das Plugin-eigene Gradle-Subprojekt mit – das lässt sich vom App-Modul aus nicht sauber/zuverlässig überschreiben (ein `subprojects { afterEvaluate { ... } }`-Workaround scheitert reproduzierbar an "Cannot run Project.afterEvaluate(Action) when the project is already evaluated"). Deshalb ist `file_picker` in der `pubspec.yaml` bewusst exakt auf `8.1.2` gepinnt (keine Caret-Version), eine Version vor dieser Anforderung. Bei einem gewollten Upgrade auf eine neuere `file_picker`-Version diesen Punkt im Hinterkopf behalten.
+**Hinweis zu `file_picker`:** `flutter_plugin_android_lifecycle` (eine von mehreren Plugins gemeinsam genutzte transitive Abhängigkeit, u. a. über `file_picker`) verlangt `compileSdk 36` fürs jeweilige Plugin-eigene Gradle-Subprojekt – unabhängig von der gewählten `file_picker`-Version, da nur eine gemeinsame `flutter_plugin_android_lifecycle`-Version für alle Plugins aufgelöst wird. `compileSdk = 36` im App-Modul allein reicht nicht, jedes Plugin-Subprojekt braucht es einzeln. Ein `subprojects { afterEvaluate { ... } }`-Workaround scheitert reproduzierbar an "Cannot run Project.afterEvaluate(Action) when the project is already evaluated" (Timing-Konflikt mit Flutters `evaluationDependsOn(":app")`). Stattdessen an `android/build.gradle.kts` (Root, nicht `app/`) anhängen – reagiert auf die Plugin-Anwendung statt auf den Evaluationszeitpunkt und ist deshalb robust:
+
+```kotlin
+subprojects {
+    plugins.withId("com.android.library") {
+        extensions.configure<com.android.build.gradle.LibraryExtension> {
+            compileSdk = 36
+        }
+    }
+}
+```
 
 ### Starten / Bauen
 

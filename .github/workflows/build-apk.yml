@@ -58,6 +58,19 @@ jobs:
           }
           EOF
 
+      - name: compileSdk 36 auch für Plugin-Subprojekte erzwingen (z. B. file_picker)
+        run: |
+          cat >> android/build.gradle.kts <<'EOF'
+
+          subprojects {
+              plugins.withId("com.android.library") {
+                  extensions.configure<com.android.build.gradle.LibraryExtension> {
+                      compileSdk = 36
+                  }
+              }
+          }
+          EOF
+
       - run: flutter pub get
       - run: flutter analyze
       - run: flutter build apk --release
