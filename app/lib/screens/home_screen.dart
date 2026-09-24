@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../models/vehicle.dart';
 import '../providers/fuhrpark_provider.dart';
 import '../widgets/empty_state.dart';
+import 'backup_screen.dart';
 import 'reminders_screen.dart';
 import 'vehicle_detail_screen.dart';
 import 'vehicle_form_screen.dart';
@@ -35,6 +36,13 @@ class _HomeScreenState extends State<HomeScreen> {
             tooltip: 'Anstehende Termine',
             onPressed: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const RemindersScreen()),
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.cloud_outlined),
+            tooltip: 'Backup & Cloud-Sync',
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const BackupScreen()),
             ),
           ),
         ],

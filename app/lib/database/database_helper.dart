@@ -348,4 +348,50 @@ class DatabaseHelper {
     );
     return rows.map(VehicleDocument.fromMap).toList();
   }
+
+  // ---------------- Export / Import (Backup & Sync) ----------------
+
+  static const backupTables = [
+    'vehicles',
+    'tire_sets',
+    'inspections',
+    'vignettes',
+    'insurances',
+    'documents',
+  ];
+
+  /// Liefert den kompletten Inhalt aller Tabellen als Rohdaten - direkt
+  /// JSON-serialisierbar, da alle Modelle bereits primitive Typen in
+  /// toMap() liefern.
+  Future<Map<String, List<Map<String, Object?>>>> exportAllRaw() async {
+    final db = await database;
+    final result = <String, List<Map<String, Object?>>>{};
+    for (final table in backupTables) {
+      result[table] = await db.query(table);
+    }
+    return result;
+  }
+
+  /// Ersetzt den kompletten lokalen Datenbestand durch [data]. Das Löschen
+  /// von `vehicles` genügt, da alle Kind-Tabellen per ON DELETE CASCADE
+  /// automatisch mitgeräumt werden. Reihenfolge beim Einfügen: Eltern
+  /// (vehicles) vor Kindern wegen Foreign-Key-Constraints.
+  Future<void> replaceAllRaw(
+    Map<String, List<Map<String, Object?>>> data,
+  ) async {
+    final db = await database;
+    await db.transaction((txn) async {
+      await txn.delete('vehicles');
+      final batch = txn.batch();
+      for (final row in data['vehicles'] ?? const []) {
+        batch.insert('vehicles', row);
+      }
+      for (final table in backupTables.where((t) => t != 'vehicles')) {
+        for (final row in data[table] ?? const []) {
+          batch.insert(table, row);
+        }
+      }
+      await batch.commit(noResult: true);
+    });
+  }
 }

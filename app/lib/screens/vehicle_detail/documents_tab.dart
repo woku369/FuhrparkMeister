@@ -3,13 +3,13 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../models/vehicle.dart';
 import '../../models/vehicle_document.dart';
 import '../../providers/fuhrpark_provider.dart';
+import '../../services/document_storage.dart';
 import '../../widgets/date_format_x.dart';
 import '../../widgets/empty_state.dart';
 
@@ -77,11 +77,17 @@ class _DocumentsTabState extends State<DocumentsTab> {
                     children: [
                       ClipRRect(
                         borderRadius: BorderRadius.circular(6),
-                        child: Image.file(
-                          File(doc.dateipfad),
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) =>
-                              const Icon(Icons.broken_image_outlined),
+                        child: FutureBuilder<String>(
+                          future: DocumentStorage.absolutePath(doc.dateipfad),
+                          builder: (context, snap) {
+                            if (!snap.hasData) return const SizedBox.shrink();
+                            return Image.file(
+                              File(snap.data!),
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) =>
+                                  const Icon(Icons.broken_image_outlined),
+                            );
+                          },
                         ),
                       ),
                       Positioned(
@@ -152,22 +158,17 @@ class _DocumentsTabState extends State<DocumentsTab> {
     );
     if (meta == null) return;
 
-    final docsDir = await getApplicationDocumentsDirectory();
-    final targetDir = Directory(
-      p.join(docsDir.path, 'fuhrparkmeister_docs', widget.vehicle.id),
-    );
-    if (!await targetDir.exists()) {
-      await targetDir.create(recursive: true);
-    }
+    final targetDir = await DocumentStorage.vehicleDir(widget.vehicle.id);
     final ext = p.extension(picked.path);
-    final targetPath = p.join(targetDir.path, '${_uuid.v4()}$ext');
+    final fileName = '${_uuid.v4()}$ext';
+    final targetPath = p.join(targetDir.path, fileName);
     await File(picked.path).copy(targetPath);
 
     final document = VehicleDocument(
       id: _uuid.v4(),
       vehicleId: widget.vehicle.id,
       kategorie: meta.kategorie,
-      dateipfad: targetPath,
+      dateipfad: '${widget.vehicle.id}/$fileName',
       titel: meta.titel,
       erstelltAm: DateTime.now(),
     );
@@ -271,8 +272,16 @@ class _DocumentViewer extends StatelessWidget {
       body: Column(
         children: [
           Expanded(
-            child: InteractiveViewer(
-              child: Image.file(File(document.dateipfad)),
+            child: FutureBuilder<String>(
+              future: DocumentStorage.absolutePath(document.dateipfad),
+              builder: (context, snap) {
+                if (!snap.hasData) {
+                  return const Center(
+                    child: CircularProgressIndicator(color: Colors.white),
+                  );
+                }
+                return InteractiveViewer(child: Image.file(File(snap.data!)));
+              },
             ),
           ),
           Padding(

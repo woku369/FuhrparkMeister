@@ -12,7 +12,7 @@ Fuhrparkverwaltung für **Autos, Anhänger, Motorräder, Wohnwagen und Fahrräde
 │       ├── models/      # Vehicle, TireSet, Inspection, Vignette, Insurance, VehicleDocument
 │       ├── database/    # SQLite-Zugriff (sqflite)
 │       ├── providers/   # FuhrparkProvider (State, CRUD, Erinnerungen)
-│       ├── services/    # NotificationService (flutter_local_notifications)
+│       ├── services/    # NotificationService, DriveSyncService, DocumentStorage
 │       ├── screens/     # Home, Fahrzeug-Formular, Fahrzeug-Detail (Tabs), Termine
 │       └── widgets/     # gemeinsame UI-Bausteine
 └── ROADMAP.md
@@ -29,7 +29,8 @@ Fuhrparkverwaltung für **Autos, Anhänger, Motorräder, Wohnwagen und Fahrräde
 - **Versicherungen**: Gesellschaft, Polizzennummer, Art (Haftpflicht/Teilkasko/Vollkasko), jährliche Fälligkeit, Prämie – Erinnerung 14 Tage vorher
 - **Dokumenten-Galerie**: Fotos von Zulassungsschein, Polizze, Rechnungen etc. je Fahrzeug, kategorisiert, lokal gespeichert
 - **Termine-Übersicht**: alle offenen Fälligkeiten fahrzeugübergreifend, farblich nach Dringlichkeit sortiert
-- **Offline-fähig**: lokale SQLite-Datenbank, keine Cloud-Anbindung
+- **Offline-fähig**: lokale SQLite-Datenbank als primärer Datenspeicher
+- **Backup & Geräte-Sync über Google Drive**: manueller Voll-Snapshot (Datenbank + Dokumenten-Fotos) in einen eigenen Drive-Ordner hoch- und herunterladen, für Nutzung auf mehreren Geräten
 
 ---
 
@@ -69,6 +70,33 @@ Die fertige APK liegt danach unter `app/build/app/outputs/flutter-apk/app-releas
 
 ---
 
+## Cloud-Sync einrichten (Google Drive)
+
+Die App nutzt die Google-Drive-API mit dem eingeschränkten Scope `drive.file` –
+sie sieht dadurch **nur** die Dateien, die sie selbst in einem eigenen
+`FuhrparkMeister`-Ordner in deinem Drive anlegt, nichts anderes im Google-Konto.
+Dafür muss einmalig ein eigenes Google-Cloud-Projekt eingerichtet werden
+(kann Claude nicht für dich erledigen, da es dein persönliches Google-Konto
+betrifft):
+
+1. **Google-Cloud-Projekt anlegen** unter [console.cloud.google.com](https://console.cloud.google.com)
+2. **Drive API aktivieren**: *APIs & Dienste → Bibliothek* → „Google Drive API" suchen → aktivieren
+3. **OAuth-Zustimmungsbildschirm konfigurieren**: *APIs & Dienste → OAuth consent screen* → „Extern" → App-Name, Support-E-Mail eintragen, dich selbst als **Testnutzer** hinzufügen
+4. **SHA-1-Fingerabdruck ermitteln**:
+   ```bash
+   cd app/android && ./gradlew signingReport
+   ```
+   (Abschnitt „Variant: debug" → SHA-1 kopieren; für die spätere Release-APK denselben Schritt mit dem Release-Keystore wiederholen)
+5. **OAuth-Client-ID erstellen**: *APIs & Dienste → Anmeldedaten → Anmeldedaten erstellen → OAuth-Client-ID* → Typ „Android" → Package-Name (`applicationId` aus `app/android/app/build.gradle`, per Default `at.kraeutermeister.fuhrparkmeister`) + SHA-1 eintragen
+
+### Wichtiger Hinweis zum Testmodus
+[Vermutung/Hinweis, Stand der Recherche September 2026, bitte in der aktuellen Google-Cloud-Console gegenprüfen]: Solange der OAuth-Zustimmungsbildschirm auf **„Testing"** steht, laufen ausgestellte Tokens nach **7 Tagen** ab – du müsstest dich dann in der App neu anmelden. Um das zu vermeiden, den Zustimmungsbildschirm auf **„In Produktion"** stellen; bei einem reinen Privat-Tool mit dem eingeschränkten `drive.file`-Scope ist dafür nach bisherigem Kenntnisstand keine Google-Verifizierung nötig, es kann aber weiterhin eine „Unverifizierte App"-Warnung erscheinen, die man beim Login manuell bestätigt. Da sich Googles Richtlinien hierzu ändern können, im Zweifel die aktuelle Google-Cloud-Dokumentation zum OAuth-Zustimmungsbildschirm konsultieren.
+
+### Nutzung in der App
+*Backup & Cloud-Sync* (Wolken-Symbol oben rechts im Home-Screen) → „Anmelden" → **Backup jetzt hochladen** bzw. **Backup wiederherstellen**. Es ist ein vollständiger Schnappschuss ohne automatischen Merge: vor dem Gerätewechsel hochladen, auf dem Zielgerät herunterladen.
+
+---
+
 ## Datenmodell (Kurzüberblick)
 
 | Tabelle | Zweck |
@@ -88,5 +116,5 @@ Alle Kind-Tabellen hängen per `ON DELETE CASCADE` an `vehicles` – Fahrzeug l�
 
 - **Nicht in dieser Umgebung gebaut/getestet**: In der Cloud-Session, die diesen Code erzeugt hat, war kein Flutter-SDK verfügbar. Der Dart-Code wurde sorgfältig nach Konventionen des Schwester-Repos `zeiterfassung` geschrieben, aber weder `flutter pub get` noch `flutter analyze` noch ein echter Build konnten hier ausgeführt werden. Vor dem ersten Release-Build lokal `flutter analyze` laufen lassen.
 - **Zeitzone für Erinnerungen** ist fest auf `Europe/Vienna` codiert.
-- **Kein NAS-Sync**: Anders als bei `zeiterfassung` gibt es (noch) keine Backend-Synchronisation – alle Daten liegen ausschließlich lokal auf dem Gerät. Siehe `ROADMAP.md`.
+- **Cloud-Sync ist manuell, kein Merge**: Der Google-Drive-Sync überschreibt beim Hochladen/Herunterladen jeweils den kompletten Gegenstand ("letzter Stand gewinnt"). Werden auf zwei Geräten parallel Änderungen gemacht, ohne dazwischen zu synchronisieren, gehen die zuletzt nicht hochgeladenen Änderungen beim nächsten Download verloren. Für einen echten Merge bräuchte es eine feinere Sync-Logik (siehe `ROADMAP.md`).
 - **iOS**: nicht Ziel dieser App (analog zu den anderen Meister-Apps im Portfolio).
