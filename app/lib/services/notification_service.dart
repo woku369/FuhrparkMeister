@@ -79,6 +79,8 @@ class NotificationService {
       // gesonderte "Alarme & Erinnerungen"-Berechtigung (Android 12+).
       androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
       matchDateTimeComponents: DateTimeComponents.dateAndTime,
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
     );
   }
 

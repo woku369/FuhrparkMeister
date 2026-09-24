@@ -178,7 +178,7 @@ class _InspectionFormSheetState extends State<_InspectionFormSheet> {
             ),
             const SizedBox(height: 12),
             DropdownButtonFormField<InspectionType>(
-              value: _type,
+              initialValue: _type,
               decoration: const InputDecoration(labelText: 'Art'),
               items: InspectionType.values
                   .map((t) => DropdownMenuItem(value: t, child: Text(t.label)))

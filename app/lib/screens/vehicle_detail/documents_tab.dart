@@ -215,7 +215,7 @@ class _DocumentMetaDialogState extends State<_DocumentMetaDialog> {
         mainAxisSize: MainAxisSize.min,
         children: [
           DropdownButtonFormField<DocumentCategory>(
-            value: _kategorie,
+            initialValue: _kategorie,
             decoration: const InputDecoration(labelText: 'Kategorie'),
             items: DocumentCategory.values
                 .map((c) => DropdownMenuItem(value: c, child: Text(c.label)))

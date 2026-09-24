@@ -177,7 +177,7 @@ class _TireFormSheetState extends State<_TireFormSheet> {
             ),
             const SizedBox(height: 12),
             DropdownButtonFormField<TireSeason>(
-              value: _season,
+              initialValue: _season,
               decoration: const InputDecoration(labelText: 'Saison'),
               items: TireSeason.values
                   .map((s) => DropdownMenuItem(value: s, child: Text(s.label)))

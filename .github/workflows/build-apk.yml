@@ -30,6 +30,9 @@ jobs:
         run: |
           if [ ! -d android ]; then
             flutter create . --platforms=android --org at.kraeutermeister
+            # Generischer Beispieltest von 'flutter create' passt nicht zu
+            # unserer App (referenziert Platzhalterklasse MyApp) - entfernen.
+            rm -f test/widget_test.dart
           fi
 
       - run: flutter pub get

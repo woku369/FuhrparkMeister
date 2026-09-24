@@ -382,7 +382,7 @@ class _InsuranceFormSheetState extends State<_InsuranceFormSheet> {
             ),
             const SizedBox(height: 12),
             DropdownButtonFormField<InsuranceType>(
-              value: _type,
+              initialValue: _type,
               decoration: const InputDecoration(labelText: 'Art'),
               items: InsuranceType.values
                   .map((t) => DropdownMenuItem(value: t, child: Text(t.label)))

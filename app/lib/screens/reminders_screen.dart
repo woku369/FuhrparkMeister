@@ -38,7 +38,7 @@ class RemindersScreen extends StatelessWidget {
               return Card(
                 child: ListTile(
                   leading: CircleAvatar(
-                    backgroundColor: _colorFor(r).withOpacity(0.15),
+                    backgroundColor: _colorFor(r).withValues(alpha: 0.15),
                     child: Icon(_iconFor(r.source), color: _colorFor(r)),
                   ),
                   title: Text('${r.vehicleName} · ${r.titel}'),

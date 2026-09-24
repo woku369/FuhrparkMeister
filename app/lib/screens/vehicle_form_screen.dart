@@ -74,7 +74,7 @@ class _VehicleFormScreenState extends State<VehicleFormScreen> {
           padding: const EdgeInsets.all(16),
           children: [
             DropdownButtonFormField<VehicleType>(
-              value: _type,
+              initialValue: _type,
               decoration: const InputDecoration(labelText: 'Typ'),
               items: VehicleType.values
                   .map((t) => DropdownMenuItem(value: t, child: Text(t.label)))
