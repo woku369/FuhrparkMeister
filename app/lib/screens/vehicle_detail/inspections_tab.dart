@@ -10,6 +10,24 @@ import '../../widgets/empty_state.dart';
 
 const _uuid = Uuid();
 
+const _monatsnamen = [
+  'Jänner',
+  'Februar',
+  'März',
+  'April',
+  'Mai',
+  'Juni',
+  'Juli',
+  'August',
+  'September',
+  'Oktober',
+  'November',
+  'Dezember',
+];
+
+/// Letzter Tag des angegebenen Monats (Tag 0 des Folgemonats).
+DateTime _letzterTagDesMonats(int jahr, int monat) => DateTime(jahr, monat + 1, 0);
+
 class InspectionsTab extends StatefulWidget {
   final Vehicle vehicle;
 
@@ -67,11 +85,18 @@ class _InspectionsTabState extends State<InspectionsTab> {
                     ),
                     title: Text(i.type.label),
                     subtitle: Text(
-                      i.erledigt
-                          ? 'Erledigt'
-                          : 'Fällig am ${i.faelligAm.deDate}'
-                              '${ueberfaellig ? ' · überfällig' : ''}',
-                      style: ueberfaellig
+                      [
+                        if (i.type == InspectionType.pickerl57a)
+                          'Plakette bis ${_monatsnamen[i.faelligAm.month - 1]} ${i.faelligAm.year}'
+                        else
+                          'Fällig am ${i.faelligAm.deDate}',
+                        if (!i.erledigt && ueberfaellig) 'überfällig',
+                        if (i.erledigt && i.letztePruefungAm != null)
+                          'geprüft am ${i.letztePruefungAm!.deDate}'
+                        else if (i.erledigt)
+                          'erledigt',
+                      ].join(' · '),
+                      style: ueberfaellig && !i.erledigt
                           ? const TextStyle(color: Colors.red)
                           : null,
                     ),
@@ -174,9 +199,14 @@ class _InspectionFormSheet extends StatefulWidget {
 class _InspectionFormSheetState extends State<_InspectionFormSheet> {
   late InspectionType _type;
   DateTime _faelligAm = DateTime.now().add(const Duration(days: 30));
+  late int _plakettenMonat;
+  late int _plakettenJahr;
+  DateTime? _letztePruefungAm;
   late final TextEditingController _erinnerungTage;
   late final TextEditingController _notizen;
   bool _saving = false;
+
+  bool get _istPickerl => _type == InspectionType.pickerl57a;
 
   @override
   void initState() {
@@ -184,6 +214,9 @@ class _InspectionFormSheetState extends State<_InspectionFormSheet> {
     final e = widget.existing;
     _type = e?.type ?? InspectionType.pickerl57a;
     _faelligAm = e?.faelligAm ?? _faelligAm;
+    _plakettenMonat = (e?.faelligAm ?? _faelligAm).month;
+    _plakettenJahr = (e?.faelligAm ?? _faelligAm).year;
+    _letztePruefungAm = e?.letztePruefungAm;
     _erinnerungTage =
         TextEditingController(text: (e?.erinnerungTageVorher ?? 30).toString());
     _notizen = TextEditingController(text: e?.notizen ?? '');
@@ -217,21 +250,61 @@ class _InspectionFormSheetState extends State<_InspectionFormSheet> {
               onChanged: (t) => setState(() => _type = t ?? _type),
             ),
             const SizedBox(height: 12),
-            InkWell(
-              onTap: () async {
-                final result = await showDatePicker(
-                  context: context,
-                  initialDate: _faelligAm,
-                  firstDate: DateTime(1970),
-                  lastDate: DateTime(2100),
-                );
-                if (result != null) setState(() => _faelligAm = result);
-              },
-              child: InputDecorator(
-                decoration: const InputDecoration(labelText: 'Fällig am *'),
-                child: Text(_faelligAm.deDate),
+            if (_istPickerl) ...[
+              Text(
+                'Plakette (Monat/Jahr der Lochung)',
+                style: Theme.of(context).textTheme.bodySmall,
               ),
-            ),
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  Expanded(
+                    flex: 3,
+                    child: DropdownButtonFormField<int>(
+                      initialValue: _plakettenMonat,
+                      decoration: const InputDecoration(labelText: 'Monat'),
+                      items: [
+                        for (var m = 1; m <= 12; m++)
+                          DropdownMenuItem(value: m, child: Text(_monatsnamen[m - 1])),
+                      ],
+                      onChanged: (m) =>
+                          setState(() => _plakettenMonat = m ?? _plakettenMonat),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    flex: 2,
+                    child: DropdownButtonFormField<int>(
+                      initialValue: _plakettenJahr,
+                      decoration: const InputDecoration(labelText: 'Jahr'),
+                      items: [
+                        for (var j = DateTime.now().year - 1;
+                            j <= DateTime.now().year + 6;
+                            j++)
+                          DropdownMenuItem(value: j, child: Text('$j')),
+                      ],
+                      onChanged: (j) =>
+                          setState(() => _plakettenJahr = j ?? _plakettenJahr),
+                    ),
+                  ),
+                ],
+              ),
+            ] else
+              InkWell(
+                onTap: () async {
+                  final result = await showDatePicker(
+                    context: context,
+                    initialDate: _faelligAm,
+                    firstDate: DateTime(1970),
+                    lastDate: DateTime(2100),
+                  );
+                  if (result != null) setState(() => _faelligAm = result);
+                },
+                child: InputDecorator(
+                  decoration: const InputDecoration(labelText: 'Fällig am *'),
+                  child: Text(_faelligAm.deDate),
+                ),
+              ),
             const SizedBox(height: 12),
             TextField(
               controller: _erinnerungTage,
@@ -239,6 +312,27 @@ class _InspectionFormSheetState extends State<_InspectionFormSheet> {
                 labelText: 'Erinnerung (Tage vorher)',
               ),
               keyboardType: TextInputType.number,
+            ),
+            const SizedBox(height: 12),
+            InkWell(
+              onTap: () async {
+                final result = await showDatePicker(
+                  context: context,
+                  initialDate: _letztePruefungAm ?? DateTime.now(),
+                  firstDate: DateTime(1970),
+                  lastDate: DateTime(2100),
+                );
+                if (result != null) setState(() => _letztePruefungAm = result);
+              },
+              child: InputDecorator(
+                decoration: const InputDecoration(
+                  labelText: 'Tatsächliche Prüfung am',
+                  helperText: 'Nach der Begutachtung hier eintragen',
+                ),
+                child: Text(
+                  _letztePruefungAm == null ? '– noch nicht geprüft –' : _letztePruefungAm!.deDate,
+                ),
+              ),
             ),
             const SizedBox(height: 12),
             TextField(
@@ -268,12 +362,15 @@ class _InspectionFormSheetState extends State<_InspectionFormSheet> {
     setState(() => _saving = true);
     try {
       final provider = context.read<FuhrparkProvider>();
+      final faelligAm = _istPickerl
+          ? _letzterTagDesMonats(_plakettenJahr, _plakettenMonat)
+          : _faelligAm;
       final inspection = Inspection(
         id: widget.existing?.id ?? _uuid.v4(),
         vehicleId: widget.vehicleId,
         type: _type,
-        faelligAm: _faelligAm,
-        letztePruefungAm: widget.existing?.letztePruefungAm,
+        faelligAm: faelligAm,
+        letztePruefungAm: _letztePruefungAm,
         erinnerungTageVorher: int.tryParse(_erinnerungTage.text.trim()) ?? 30,
         erledigt: widget.existing?.erledigt ?? false,
         notizen: _notizen.text.trim().isEmpty ? null : _notizen.text.trim(),
