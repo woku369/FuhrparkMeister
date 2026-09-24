@@ -17,6 +17,7 @@
 - [ ] Kilometerstand-Tracking je Fahrzeug
 - [ ] Servicehistorie / Kostenübersicht (Werkstattrechnungen, Treibstoff)
 - [ ] Play-Store-Vorbereitung (Signing-Key, Versionierung) falls gewünscht
+- [ ] §57a-Regeländerung ab Mai 2027 berücksichtigen [Nutzerangabe, nicht selbst verifiziert]: kein 4-Monate-Überzug nach Fälligkeit mehr, dafür Prüfung bis zu 4 Monate vor Fälligkeit möglich. App kennt aktuell weder Überzugs- noch Vorzieh-Logik (nur Fälligkeitsdatum + Erinnerung X Tage vorher) – rechtzeitig vor Mai 2027 entscheiden, ob/wie das abgebildet werden soll (z. B. Hinweistext im Formular, frühestmöglicher Prüftermin anzeigen).
 
 ## Bewusst nicht geplant
 - **Echter Merge-Sync / NAS-Backend** (wie bei `zeiterfassung`): FuhrparkMeister wird selten und unregelmäßig genutzt (Datensammlung, keine Live-Erfassung), das rechtfertigt den Aufwand einer feineren Sync-Logik nicht. Der manuelle Google-Drive-Snapshot reicht für dieses Nutzungsprofil dauerhaft, nicht nur als Übergangslösung.

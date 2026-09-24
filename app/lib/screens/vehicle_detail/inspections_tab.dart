@@ -125,11 +125,11 @@ class _InspectionsTabState extends State<InspectionsTab> {
   }
 
   Future<void> _toggleErledigt(Inspection i, bool value) async {
+    if (!mounted) return;
+    final provider = context.read<FuhrparkProvider>();
     i.erledigt = value;
-    await context
-        .read<FuhrparkProvider>()
-        .saveInspection(i, widget.vehicle.anzeigename, isNew: false);
-    setState(_reload);
+    await provider.saveInspection(i, widget.vehicle.anzeigename, isNew: false);
+    if (mounted) setState(_reload);
   }
 
   Future<void> _delete(Inspection i) async {
@@ -150,14 +150,14 @@ class _InspectionsTabState extends State<InspectionsTab> {
         ],
       ),
     );
-    if (confirmed != true) return;
-    await context.read<FuhrparkProvider>().deleteInspection(i.id);
+    if (confirmed != true || !mounted) return;
+    final provider = context.read<FuhrparkProvider>();
+    await provider.deleteInspection(i.id);
+    if (!mounted) return;
     setState(_reload);
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Termin gelöscht')),
-      );
-    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Termin gelöscht')),
+    );
   }
 
   Future<void> _openForm({Inspection? existing}) async {
@@ -170,13 +170,11 @@ class _InspectionsTabState extends State<InspectionsTab> {
         existing: existing,
       ),
     );
-    if (result == true) {
+    if (result == true && mounted) {
       setState(_reload);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Termin gespeichert')),
-        );
-      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Termin gespeichert')),
+      );
     }
   }
 }
