@@ -29,6 +29,7 @@ Fuhrparkverwaltung für **Autos, Anhänger, Motorräder, Wohnwagen und Fahrräde
 - **Versicherungen**: Gesellschaft, Polizzennummer, Art (Haftpflicht/Teilkasko/Vollkasko), jährliche Fälligkeit, Prämie – Erinnerung 14 Tage vorher
 - **Dokumenten-Galerie**: Fotos von Zulassungsschein, Polizze, Rechnungen etc. je Fahrzeug, kategorisiert, lokal gespeichert
 - **Wartungs-To-Dos**: freie Checkliste je Fahrzeug für Dinge, die auffallen oder geplant sind, unabhängig von Prüfterminen (z. B. "Bremsbeläge Anhänger prüfen")
+- **Wartungshistorie-Export**: erledigte Prüftermine und To-Dos chronologisch als Textdatei zusammengefasst und teilbar (z. B. als Merkliste/Nachweis beim Fahrzeugverkauf)
 - **Termine-Übersicht**: alle offenen Fälligkeiten fahrzeugübergreifend, farblich nach Dringlichkeit sortiert
 - **Offline-fähig**: lokale SQLite-Datenbank als primärer Datenspeicher
 - **Lokales ZIP-Backup**: Export/Import ohne jede Einrichtung – Export legt die Datei im App-eigenen Ordner ab und öffnet zusätzlich die Android-Systemfreigabe (Downloads, E-Mail, andere Cloud-Apps, ...), Import liest die neueste ZIP-Datei aus diesem Ordner ein

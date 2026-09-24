@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../models/vehicle.dart';
 import '../providers/fuhrpark_provider.dart';
+import '../services/history_export_service.dart';
 import 'vehicle_detail/documents_tab.dart';
 import 'vehicle_detail/inspections_tab.dart';
 import 'vehicle_detail/maintenance_tab.dart';
@@ -35,6 +37,11 @@ class VehicleDetailScreen extends StatelessWidget {
         appBar: AppBar(
           title: Text(v.anzeigename),
           actions: [
+            IconButton(
+              icon: const Icon(Icons.history_outlined),
+              tooltip: 'Wartungshistorie teilen',
+              onPressed: () => _exportHistory(context, v),
+            ),
             IconButton(
               icon: const Icon(Icons.edit_outlined),
               onPressed: () async {
@@ -79,6 +86,24 @@ class VehicleDetailScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Future<void> _exportHistory(BuildContext context, Vehicle vehicle) async {
+    try {
+      final file = await HistoryExportService.exportTextFor(vehicle);
+      await SharePlus.instance.share(
+        ShareParams(
+          files: [XFile(file.path)],
+          text: 'Wartungshistorie ${vehicle.anzeigename}',
+        ),
+      );
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Export fehlgeschlagen: $e')),
+        );
+      }
+    }
   }
 
   Future<void> _confirmDelete(BuildContext context, Vehicle vehicle) async {
