@@ -9,15 +9,20 @@ import 'package:path_provider/path_provider.dart';
 import '../database/database_helper.dart';
 import 'document_storage.dart';
 
-/// Backup als ZIP-Datei auf dem Gerät - unabhängig von Google Drive.
+/// Backup als ZIP-Datei auf dem Gerät - unabhängig von Google Drive, z. B.
+/// für einen gemeinsam genutzten Familien-Fuhrpark: eine Person exportiert
+/// und teilt die Datei, die anderen importieren sie.
 /// Export legt die Datei im App-eigenen externen Ordner ab (sichtbar für
 /// Datei-Manager unter Android/data/<paket>/files/, keine Berechtigung
-/// nötig) und öffnet zusätzlich die Android-Systemfreigabe. Import liest
-/// die neueste ZIP-Datei aus genau diesem Ordner ein - eine von einem
-/// anderen Gerät empfangene Backup-Datei muss man also mit einem
-/// Datei-Manager dorthin kopieren. Bewusst ohne allgemeinen Datei-Dialog
-/// (file_picker), weil dessen Android-Abhängigkeiten mit den anderen
-/// Plugins dieser App nicht kompilierbar sind (siehe ROADMAP).
+/// nötig) und öffnet zusätzlich die Android-Systemfreigabe. Import geht auf
+/// zwei Wegen: entweder liest [importLatestFromBackupDir] die neueste
+/// ZIP-Datei aus genau diesem Ordner (Datei manuell per Datei-Manager dort
+/// ablegen), oder - der übliche Weg - eine per WhatsApp/Drive/E-Mail
+/// empfangene ZIP wird direkt per Android-Teilen-Dialog "Öffnen mit
+/// FuhrparkMeister" gewählt (siehe ShareImportService, MainActivity.kt).
+/// Bewusst ohne allgemeinen Datei-Dialog (file_picker), weil dessen
+/// Android-Abhängigkeiten mit den anderen Plugins dieser App nicht
+/// kompilierbar sind (siehe ROADMAP).
 /// Import ersetzt den kompletten lokalen Datenbestand ("letzter Stand
 /// gewinnt", wie beim Drive-Backup - kein Merge einzelner Datensätze).
 class LocalBackupService {

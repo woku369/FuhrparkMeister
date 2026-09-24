@@ -7,6 +7,8 @@ import 'package:provider/provider.dart';
 import '../models/vehicle.dart';
 import '../providers/fuhrpark_provider.dart';
 import '../services/document_storage.dart';
+import '../services/local_backup_service.dart';
+import '../services/share_import_service.dart';
 import '../widgets/empty_state.dart';
 import 'backup_screen.dart';
 import 'reminders_screen.dart';
@@ -30,6 +32,7 @@ class _HomeScreenState extends State<HomeScreen> {
       context.read<FuhrparkProvider>().loadVehicles();
     });
     _loadVersion();
+    _setupShareImport();
   }
 
   Future<void> _loadVersion() async {
@@ -38,6 +41,57 @@ class _HomeScreenState extends State<HomeScreen> {
     final info = await PackageInfo.fromPlatform();
     if (mounted) {
       setState(() => _versionLabel = 'v${info.version} (${info.buildNumber})');
+    }
+  }
+
+  /// Erlaubt Import per Android-Teilen-Dialog: eine per WhatsApp/Drive/
+  /// E-Mail empfangene Backup-ZIP lässt sich direkt "Öffnen mit
+  /// FuhrparkMeister" wählen, statt sie manuell per Datei-Manager in den
+  /// App-Ordner kopieren zu müssen.
+  void _setupShareImport() {
+    ShareImportService.consumeInitialSharedZip().then((path) {
+      if (path != null) _handleSharedZip(path);
+    });
+    ShareImportService.listenForSharedZip(_handleSharedZip);
+  }
+
+  Future<void> _handleSharedZip(String path) async {
+    if (!mounted) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Backup importieren?'),
+        content: const Text(
+          'Eine geteilte Backup-Datei wurde empfangen. Alle lokalen Daten '
+          'auf diesem Gerät werden dadurch ersetzt. Nicht gesicherte '
+          'lokale Änderungen gehen dabei verloren.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Abbrechen'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Importieren'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    try {
+      await LocalBackupService.importFromZip(path);
+      if (!mounted) return;
+      await context.read<FuhrparkProvider>().loadVehicles();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Backup importiert')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Import fehlgeschlagen: $e')),
+      );
     }
   }
 

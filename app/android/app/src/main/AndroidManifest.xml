@@ -24,6 +24,22 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
+            <!-- Ermöglicht Backup-Import per Android-Teilen-Dialog: eine
+                 empfangene .zip-Datei (z. B. aus WhatsApp, Drive, E-Mail)
+                 lässt sich direkt "Öffnen mit FuhrparkMeister" statt sie
+                 erst manuell per Datei-Manager in den App-Ordner zu kopieren. -->
+            <intent-filter>
+                <action android:name="android.intent.action.SEND"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <data android:mimeType="application/zip"/>
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="content" android:mimeType="application/zip"/>
+                <data android:scheme="file" android:mimeType="application/zip"/>
+            </intent-filter>
         </activity>
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->

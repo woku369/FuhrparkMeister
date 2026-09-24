@@ -51,18 +51,18 @@ class _BackupScreenState extends State<BackupScreen> {
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    'Funktioniert sofort, ohne Google-Konto-Einrichtung. '
-                    'Export erzeugt eine ZIP-Datei mit allen Daten und Fotos '
-                    'im App-eigenen Ordner und öffnet zusätzlich die '
-                    'Android-Systemfreigabe. Soll die Datei in Downloads '
-                    'landen: im Freigabe-Dialog "Dateien" (oder deinen '
-                    'Datei-Manager) wählen und dort Downloads als Ziel '
-                    'auswählen – Android erlaubt Apps keinen direkten '
-                    'Zugriff auf den Downloads-Ordner, dieser Zwischenschritt '
-                    'ist derzeit nötig. Import liest die neueste ZIP-Datei '
-                    'aus dem App-eigenen Ordner und ersetzt den kompletten '
-                    'lokalen Stand – eine von einem anderen Gerät empfangene '
-                    'Datei also vorher per Datei-Manager dorthin kopieren.',
+                    'Funktioniert sofort, ohne Google-Konto-Einrichtung – '
+                    'z. B. für einen gemeinsam genutzten Familien-Fuhrpark: '
+                    'eine Person exportiert und teilt die Datei (WhatsApp, '
+                    'E-Mail, Drive …), die anderen importieren sie. Export '
+                    'erzeugt eine ZIP-Datei mit allen Daten und Fotos und '
+                    'öffnet die Android-Systemfreigabe. Import: die '
+                    'empfangene ZIP-Datei antippen und "Öffnen mit '
+                    'FuhrparkMeister" wählen – ersetzt den kompletten '
+                    'lokalen Stand auf diesem Gerät ("letzter Stand '
+                    'gewinnt", kein Zusammenführen einzelner Änderungen). '
+                    'Alternativ liest der Button unten die neueste ZIP-Datei '
+                    'aus dem App-eigenen Ordner ein.',
                   ),
                   if (_backupDirPath != null) ...[
                     const SizedBox(height: 8),
