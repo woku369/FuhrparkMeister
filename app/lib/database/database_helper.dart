@@ -14,7 +14,7 @@ class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._();
 
   static const _dbName = 'fuhrparkmeister.db';
-  static const _dbVersion = 3;
+  static const _dbVersion = 4;
 
   static const _createMaintenanceTasksTable = '''
     CREATE TABLE maintenance_tasks (
@@ -60,6 +60,10 @@ class DatabaseHelper {
             anzahl_vorbesitzer INTEGER,
             soll_reifendimension TEXT,
             notizen TEXT,
+            foto_pfad TEXT,
+            leistung_kw INTEGER,
+            erstzulassung_monat INTEGER,
+            erstzulassung_jahr INTEGER,
             created_at TEXT NOT NULL,
             updated_at TEXT NOT NULL
           )
@@ -112,6 +116,7 @@ class DatabaseHelper {
             type TEXT NOT NULL,
             gueltig_ab TEXT,
             faelligkeit_jaehrlich_am TEXT,
+            zahlungsintervall TEXT,
             praemie_euro REAL,
             notizen TEXT
           )
@@ -156,6 +161,21 @@ class DatabaseHelper {
           );
           await db.execute(
             'ALTER TABLE vehicles ADD COLUMN anzahl_vorbesitzer INTEGER',
+          );
+        }
+        if (oldVersion < 4) {
+          await db.execute('ALTER TABLE vehicles ADD COLUMN foto_pfad TEXT');
+          await db.execute(
+            'ALTER TABLE vehicles ADD COLUMN leistung_kw INTEGER',
+          );
+          await db.execute(
+            'ALTER TABLE vehicles ADD COLUMN erstzulassung_monat INTEGER',
+          );
+          await db.execute(
+            'ALTER TABLE vehicles ADD COLUMN erstzulassung_jahr INTEGER',
+          );
+          await db.execute(
+            'ALTER TABLE insurances ADD COLUMN zahlungsintervall TEXT',
           );
         }
       },

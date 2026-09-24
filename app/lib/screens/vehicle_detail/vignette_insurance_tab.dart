@@ -122,7 +122,10 @@ class _VignetteInsuranceTabState extends State<VignetteInsuranceTab> {
                             if (i.polizzennummer.isNotEmpty)
                               'Polizze ${i.polizzennummer}',
                             if (i.faelligkeitJaehrlichAm != null)
-                              'jährlich fällig am ${i.faelligkeitJaehrlichAm!.deDate}',
+                              'Hauptfälligkeit ${i.faelligkeitJaehrlichAm!.deDate}'
+                                  ' · ${(i.zahlungsintervall ?? PaymentInterval.jaehrlich).label}',
+                            if (i.naechsteFaelligkeit != null)
+                              'nächste Zahlung ${i.naechsteFaelligkeit!.deDate}',
                           ].join(' · '),
                         ),
                         trailing: PopupMenuButton<String>(
@@ -405,6 +408,7 @@ class _InsuranceFormSheetState extends State<_InsuranceFormSheet> {
   late final TextEditingController _polizzennummer;
   late InsuranceType _type;
   DateTime? _faelligkeitJaehrlichAm;
+  late PaymentInterval _zahlungsintervall;
   late final TextEditingController _praemie;
   late final TextEditingController _notizen;
   bool _saving = false;
@@ -417,6 +421,7 @@ class _InsuranceFormSheetState extends State<_InsuranceFormSheet> {
     _polizzennummer = TextEditingController(text: e?.polizzennummer ?? '');
     _type = e?.type ?? InsuranceType.haftpflicht;
     _faelligkeitJaehrlichAm = e?.faelligkeitJaehrlichAm;
+    _zahlungsintervall = e?.zahlungsintervall ?? PaymentInterval.jaehrlich;
     _praemie = TextEditingController(text: e?.praemieEuro?.toString() ?? '');
     _notizen = TextEditingController(text: e?.notizen ?? '');
   }
@@ -464,14 +469,26 @@ class _InsuranceFormSheetState extends State<_InsuranceFormSheet> {
             ),
             const SizedBox(height: 12),
             _DateField(
-              label: 'Jährlich fällig am',
+              label: 'Hauptfälligkeit (Abschluss-/Erneuerungsdatum)',
               value: _faelligkeitJaehrlichAm,
               onPick: (d) => setState(() => _faelligkeitJaehrlichAm = d),
             ),
             const SizedBox(height: 12),
+            DropdownButtonFormField<PaymentInterval>(
+              initialValue: _zahlungsintervall,
+              decoration: const InputDecoration(labelText: 'Zahlungsintervall'),
+              items: PaymentInterval.values
+                  .map((i) => DropdownMenuItem(value: i, child: Text(i.label)))
+                  .toList(),
+              onChanged: (i) =>
+                  setState(() => _zahlungsintervall = i ?? _zahlungsintervall),
+            ),
+            const SizedBox(height: 12),
             TextField(
               controller: _praemie,
-              decoration: const InputDecoration(labelText: 'Prämie (€/Jahr)'),
+              decoration: InputDecoration(
+                labelText: 'Prämie (€ / ${_zahlungsintervall.label.toLowerCase()})',
+              ),
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
             ),
             const SizedBox(height: 12),
@@ -516,6 +533,7 @@ class _InsuranceFormSheetState extends State<_InsuranceFormSheet> {
         type: _type,
         gueltigAb: widget.existing?.gueltigAb,
         faelligkeitJaehrlichAm: _faelligkeitJaehrlichAm,
+        zahlungsintervall: _zahlungsintervall,
         praemieEuro: double.tryParse(_praemie.text.trim().replaceAll(',', '.')),
         notizen: _notizen.text.trim().isEmpty ? null : _notizen.text.trim(),
       );

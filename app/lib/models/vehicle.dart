@@ -53,6 +53,10 @@ class Vehicle {
   int? anzahlVorbesitzer;
   String? sollReifendimension;
   String? notizen;
+  String? fotoPfad;
+  int? leistungKw;
+  int? erstzulassungMonat;
+  int? erstzulassungJahr;
   final DateTime createdAt;
   DateTime updatedAt;
 
@@ -71,6 +75,10 @@ class Vehicle {
     this.anzahlVorbesitzer,
     this.sollReifendimension,
     this.notizen,
+    this.fotoPfad,
+    this.leistungKw,
+    this.erstzulassungMonat,
+    this.erstzulassungJahr,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -95,6 +103,10 @@ class Vehicle {
       'anzahl_vorbesitzer': anzahlVorbesitzer,
       'soll_reifendimension': sollReifendimension,
       'notizen': notizen,
+      'foto_pfad': fotoPfad,
+      'leistung_kw': leistungKw,
+      'erstzulassung_monat': erstzulassungMonat,
+      'erstzulassung_jahr': erstzulassungJahr,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
     };
@@ -121,6 +133,10 @@ class Vehicle {
       anzahlVorbesitzer: map['anzahl_vorbesitzer'] as int?,
       sollReifendimension: map['soll_reifendimension'] as String?,
       notizen: map['notizen'] as String?,
+      fotoPfad: map['foto_pfad'] as String?,
+      leistungKw: map['leistung_kw'] as int?,
+      erstzulassungMonat: map['erstzulassung_monat'] as int?,
+      erstzulassungJahr: map['erstzulassung_jahr'] as int?,
       createdAt: DateTime.parse(map['created_at'] as String),
       updatedAt: DateTime.parse(map['updated_at'] as String),
     );

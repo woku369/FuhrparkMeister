@@ -1,9 +1,12 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 
 import '../models/vehicle.dart';
 import '../providers/fuhrpark_provider.dart';
+import '../services/document_storage.dart';
 import '../widgets/empty_state.dart';
 import 'backup_screen.dart';
 import 'reminders_screen.dart';
@@ -139,7 +142,7 @@ class _VehicleCard extends StatelessWidget {
 
     return Card(
       child: ListTile(
-        leading: CircleAvatar(child: Icon(vehicle.type.icon)),
+        leading: _VehicleThumbnail(vehicle: vehicle),
         title: Text(vehicle.anzeigename),
         subtitle: subtitleParts.isEmpty ? null : Text(subtitleParts),
         trailing: const Icon(Icons.chevron_right),
@@ -147,6 +150,41 @@ class _VehicleCard extends StatelessWidget {
           MaterialPageRoute(
             builder: (_) => VehicleDetailScreen(vehicleId: vehicle.id),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _VehicleThumbnail extends StatelessWidget {
+  final Vehicle vehicle;
+
+  const _VehicleThumbnail({required this.vehicle});
+
+  @override
+  Widget build(BuildContext context) {
+    final fotoPfad = vehicle.fotoPfad;
+    if (fotoPfad == null) {
+      return CircleAvatar(child: Icon(vehicle.type.icon));
+    }
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(8),
+      child: SizedBox(
+        width: 48,
+        height: 48,
+        child: FutureBuilder<String>(
+          future: DocumentStorage.absolutePath(fotoPfad),
+          builder: (context, snap) {
+            if (!snap.hasData) {
+              return CircleAvatar(child: Icon(vehicle.type.icon));
+            }
+            return Image.file(
+              File(snap.data!),
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) =>
+                  CircleAvatar(child: Icon(vehicle.type.icon)),
+            );
+          },
         ),
       ),
     );

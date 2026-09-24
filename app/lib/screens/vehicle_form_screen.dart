@@ -1,9 +1,16 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:path/path.dart' as p;
 import 'package:provider/provider.dart';
 
 import '../models/vehicle.dart';
 import '../providers/fuhrpark_provider.dart';
+import '../services/document_storage.dart';
 import '../widgets/date_format_x.dart';
+
+enum _FotoAction { camera, gallery, entfernen }
 
 class VehicleFormScreen extends StatefulWidget {
   final Vehicle? vehicle;
@@ -29,8 +36,16 @@ class _VehicleFormScreenState extends State<VehicleFormScreen> {
   late final TextEditingController _notizen;
   late final TextEditingController _kmBeiAnkauf;
   late final TextEditingController _vorbesitzer;
+  late final TextEditingController _leistungKw;
+  late final TextEditingController _erstzulassungJahr;
+  int? _erstzulassungMonat;
   DateTime? _kaufdatum;
   bool _saving = false;
+
+  final _picker = ImagePicker();
+  String? _existingFotoPfad;
+  XFile? _neuesFoto;
+  bool _fotoEntfernen = false;
 
   bool get _isEdit => widget.vehicle != null;
 
@@ -50,7 +65,11 @@ class _VehicleFormScreenState extends State<VehicleFormScreen> {
     _notizen = TextEditingController(text: v?.notizen ?? '');
     _kmBeiAnkauf = TextEditingController(text: v?.kilometerstandBeiAnkauf?.toString() ?? '');
     _vorbesitzer = TextEditingController(text: v?.anzahlVorbesitzer?.toString() ?? '');
+    _leistungKw = TextEditingController(text: v?.leistungKw?.toString() ?? '');
+    _erstzulassungJahr = TextEditingController(text: v?.erstzulassungJahr?.toString() ?? '');
+    _erstzulassungMonat = v?.erstzulassungMonat;
     _kaufdatum = v?.kaufdatum;
+    _existingFotoPfad = v?.fotoPfad;
   }
 
   @override
@@ -66,6 +85,8 @@ class _VehicleFormScreenState extends State<VehicleFormScreen> {
     _notizen.dispose();
     _kmBeiAnkauf.dispose();
     _vorbesitzer.dispose();
+    _leistungKw.dispose();
+    _erstzulassungJahr.dispose();
     super.dispose();
   }
 
@@ -80,6 +101,32 @@ class _VehicleFormScreenState extends State<VehicleFormScreen> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
+            Center(
+              child: GestureDetector(
+                onTap: _pickFoto,
+                child: Stack(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: SizedBox(
+                        width: 160,
+                        height: 120,
+                        child: _buildFotoPreview(),
+                      ),
+                    ),
+                    Positioned(
+                      right: 4,
+                      bottom: 4,
+                      child: const CircleAvatar(
+                        radius: 14,
+                        child: Icon(Icons.edit, size: 14),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
             DropdownButtonFormField<VehicleType>(
               initialValue: _type,
               decoration: const InputDecoration(labelText: 'Typ'),
@@ -146,6 +193,44 @@ class _VehicleFormScreenState extends State<VehicleFormScreen> {
                 ),
               ],
             ),
+            if (_type == VehicleType.auto) ...[
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      controller: _leistungKw,
+                      decoration: const InputDecoration(labelText: 'Leistung (kW)'),
+                      keyboardType: TextInputType.number,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  SizedBox(
+                    width: 90,
+                    child: DropdownButtonFormField<int>(
+                      initialValue: _erstzulassungMonat,
+                      decoration: const InputDecoration(labelText: 'EZ Monat'),
+                      items: [
+                        for (var m = 1; m <= 12; m++)
+                          DropdownMenuItem(
+                            value: m,
+                            child: Text(m.toString().padLeft(2, '0')),
+                          ),
+                      ],
+                      onChanged: (m) => setState(() => _erstzulassungMonat = m),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: TextFormField(
+                      controller: _erstzulassungJahr,
+                      decoration: const InputDecoration(labelText: 'EZ Jahr'),
+                      keyboardType: TextInputType.number,
+                    ),
+                  ),
+                ],
+              ),
+            ],
             const SizedBox(height: 12),
             InkWell(
               onTap: _pickKaufdatum,
@@ -209,6 +294,106 @@ class _VehicleFormScreenState extends State<VehicleFormScreen> {
     );
   }
 
+  Widget _buildFotoPreview() {
+    if (_neuesFoto != null) {
+      return Image.file(File(_neuesFoto!.path), fit: BoxFit.cover);
+    }
+    final existing = _existingFotoPfad;
+    if (!_fotoEntfernen && existing != null) {
+      return FutureBuilder<String>(
+        future: DocumentStorage.absolutePath(existing),
+        builder: (context, snap) {
+          if (!snap.hasData) return const SizedBox.shrink();
+          return Image.file(
+            File(snap.data!),
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) =>
+                const Icon(Icons.broken_image_outlined),
+          );
+        },
+      );
+    }
+    return Container(
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+      child: const Icon(Icons.add_a_photo_outlined, size: 32),
+    );
+  }
+
+  Future<void> _pickFoto() async {
+    final hatFoto =
+        _neuesFoto != null || (!_fotoEntfernen && _existingFotoPfad != null);
+    final action = await showModalBottomSheet<_FotoAction>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_camera_outlined),
+              title: const Text('Foto aufnehmen'),
+              onTap: () => Navigator.of(ctx).pop(_FotoAction.camera),
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library_outlined),
+              title: const Text('Aus Galerie wählen'),
+              onTap: () => Navigator.of(ctx).pop(_FotoAction.gallery),
+            ),
+            if (hatFoto)
+              ListTile(
+                leading: const Icon(Icons.delete_outline),
+                title: const Text('Foto entfernen'),
+                onTap: () => Navigator.of(ctx).pop(_FotoAction.entfernen),
+              ),
+          ],
+        ),
+      ),
+    );
+    if (action == null) return;
+    if (action == _FotoAction.entfernen) {
+      setState(() {
+        _neuesFoto = null;
+        _fotoEntfernen = true;
+      });
+      return;
+    }
+    final picked = await _picker.pickImage(
+      source: action == _FotoAction.camera
+          ? ImageSource.camera
+          : ImageSource.gallery,
+      imageQuality: 85,
+    );
+    if (picked == null || !mounted) return;
+    setState(() {
+      _neuesFoto = picked;
+      _fotoEntfernen = false;
+    });
+  }
+
+  /// Legt ein neu gewähltes Foto im fahrzeugeigenen Ordner ab (fester
+  /// Dateiname "cover<ext>", damit beim Ersetzen kein alter Dateirest
+  /// übrig bleibt) und liefert den zu speichernden relativen Pfad - oder
+  /// null, wenn das Foto entfernt wurde.
+  Future<String?> _persistFoto(String vehicleId, String? currentFotoPfad) async {
+    if (_fotoEntfernen) {
+      if (currentFotoPfad != null) {
+        final oldFile = File(await DocumentStorage.absolutePath(currentFotoPfad));
+        if (await oldFile.exists()) await oldFile.delete();
+      }
+      return null;
+    }
+    if (_neuesFoto == null) return currentFotoPfad;
+    if (currentFotoPfad != null) {
+      final oldFile = File(await DocumentStorage.absolutePath(currentFotoPfad));
+      if (await oldFile.exists()) await oldFile.delete();
+    }
+    final targetDir = await DocumentStorage.vehicleDir(vehicleId);
+    final ext = p.extension(_neuesFoto!.path);
+    final fileName = 'cover$ext';
+    final targetPath = p.join(targetDir.path, fileName);
+    await File(_neuesFoto!.path).copy(targetPath);
+    return '$vehicleId/$fileName';
+  }
+
   Future<void> _pickKaufdatum() async {
     final result = await showDatePicker(
       context: context,
@@ -245,9 +430,17 @@ class _VehicleFormScreenState extends State<VehicleFormScreen> {
             ? null
             : _sollDimension.text.trim();
         v.notizen = _notizen.text.trim().isEmpty ? null : _notizen.text.trim();
+        v.leistungKw = _type == VehicleType.auto
+            ? int.tryParse(_leistungKw.text.trim())
+            : null;
+        v.erstzulassungMonat = _type == VehicleType.auto ? _erstzulassungMonat : null;
+        v.erstzulassungJahr = _type == VehicleType.auto
+            ? int.tryParse(_erstzulassungJahr.text.trim())
+            : null;
+        v.fotoPfad = await _persistFoto(v.id, v.fotoPfad);
         await provider.updateVehicle(v);
       } else {
-        await provider.addVehicle(
+        final v = await provider.addVehicle(
           type: _type,
           name: _name.text.trim(),
           marke: _marke.text.trim().isEmpty ? null : _marke.text.trim(),
@@ -266,7 +459,19 @@ class _VehicleFormScreenState extends State<VehicleFormScreen> {
               ? null
               : _sollDimension.text.trim(),
           notizen: _notizen.text.trim().isEmpty ? null : _notizen.text.trim(),
+          leistungKw: _type == VehicleType.auto
+              ? int.tryParse(_leistungKw.text.trim())
+              : null,
+          erstzulassungMonat: _type == VehicleType.auto ? _erstzulassungMonat : null,
+          erstzulassungJahr: _type == VehicleType.auto
+              ? int.tryParse(_erstzulassungJahr.text.trim())
+              : null,
         );
+        final fotoPfad = await _persistFoto(v.id, null);
+        if (fotoPfad != null) {
+          v.fotoPfad = fotoPfad;
+          await provider.updateVehicle(v);
+        }
       }
 
       if (mounted) Navigator.of(context).pop(true);

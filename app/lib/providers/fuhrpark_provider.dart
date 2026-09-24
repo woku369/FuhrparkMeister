@@ -50,6 +50,10 @@ class FuhrparkProvider extends ChangeNotifier {
     int? anzahlVorbesitzer,
     String? sollReifendimension,
     String? notizen,
+    String? fotoPfad,
+    int? leistungKw,
+    int? erstzulassungMonat,
+    int? erstzulassungJahr,
   }) async {
     final now = DateTime.now();
     final vehicle = Vehicle(
@@ -67,6 +71,10 @@ class FuhrparkProvider extends ChangeNotifier {
       anzahlVorbesitzer: anzahlVorbesitzer,
       sollReifendimension: sollReifendimension,
       notizen: notizen,
+      fotoPfad: fotoPfad,
+      leistungKw: leistungKw,
+      erstzulassungMonat: erstzulassungMonat,
+      erstzulassungJahr: erstzulassungJahr,
       createdAt: now,
       updatedAt: now,
     );
@@ -237,8 +245,11 @@ class FuhrparkProvider extends ChangeNotifier {
     }
     try {
       await NotificationService.instance.cancelReminder(insurance.id);
-      if (insurance.faelligkeitJaehrlichAm != null) {
-        final erinnerungAm = insurance.faelligkeitJaehrlichAm!.subtract(
+      // Erinnerung am nächsten TATSÄCHLICHEN Zahlungstermin planen, nicht an
+      // der (oft in der Vergangenheit liegenden) Hauptfälligkeit selbst.
+      final naechsteFaelligkeit = insurance.naechsteFaelligkeit;
+      if (naechsteFaelligkeit != null) {
+        final erinnerungAm = naechsteFaelligkeit.subtract(
           const Duration(days: _vignetteInsuranceReminderTage),
         );
         await NotificationService.instance.scheduleReminder(
@@ -246,7 +257,7 @@ class FuhrparkProvider extends ChangeNotifier {
           title: 'Versicherung fällig',
           body:
               '$vehicleName · ${insurance.gesellschaft} · fällig am '
-              '${_formatDate(insurance.faelligkeitJaehrlichAm!)}',
+              '${_formatDate(naechsteFaelligkeit)}',
           scheduledDate: erinnerungAm,
         );
       }
@@ -344,7 +355,8 @@ class FuhrparkProvider extends ChangeNotifier {
 
     final insurances = await _db.getAllInsurances();
     for (final i in insurances) {
-      if (i.faelligkeitJaehrlichAm == null) continue;
+      final naechsteFaelligkeit = i.naechsteFaelligkeit;
+      if (naechsteFaelligkeit == null) continue;
       final vehicle = vehiclesById[i.vehicleId];
       if (vehicle == null) continue;
       reminders.add(
@@ -354,7 +366,7 @@ class FuhrparkProvider extends ChangeNotifier {
           vehicleId: vehicle.id,
           vehicleName: vehicle.anzeigename,
           titel: 'Versicherung ${i.gesellschaft}',
-          faelligAm: i.faelligkeitJaehrlichAm!,
+          faelligAm: naechsteFaelligkeit,
         ),
       );
     }

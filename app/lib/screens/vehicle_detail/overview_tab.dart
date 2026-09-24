@@ -1,6 +1,9 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 
 import '../../models/vehicle.dart';
+import '../../services/document_storage.dart';
 import '../../widgets/date_format_x.dart';
 
 class OverviewTab extends StatelessWidget {
@@ -10,6 +13,11 @@ class OverviewTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final erstzulassung = vehicle.erstzulassungMonat != null &&
+            vehicle.erstzulassungJahr != null
+        ? '${vehicle.erstzulassungMonat!.toString().padLeft(2, '0')}/${vehicle.erstzulassungJahr}'
+        : vehicle.erstzulassungJahr?.toString();
+
     final rows = <(String, String?)>[
       ('Typ', vehicle.type.label),
       ('Marke', vehicle.marke),
@@ -17,6 +25,8 @@ class OverviewTab extends StatelessWidget {
       ('Kennzeichen', vehicle.kennzeichen),
       ('Fahrgestellnummer', vehicle.fahrgestellnummer),
       ('Baujahr', vehicle.baujahr?.toString()),
+      ('Erstzulassung', erstzulassung),
+      ('Leistung', vehicle.leistungKw != null ? '${vehicle.leistungKw} kW' : null),
       ('Farbe', vehicle.farbe),
       ('Kaufdatum', vehicle.kaufdatum?.deDate),
       ('Kilometerstand bei Ankauf', vehicle.kilometerstandBeiAnkauf?.toString()),
@@ -27,6 +37,27 @@ class OverviewTab extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
+        if (vehicle.fotoPfad != null) ...[
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: AspectRatio(
+              aspectRatio: 16 / 9,
+              child: FutureBuilder<String>(
+                future: DocumentStorage.absolutePath(vehicle.fotoPfad!),
+                builder: (context, snap) {
+                  if (!snap.hasData) return const SizedBox.shrink();
+                  return Image.file(
+                    File(snap.data!),
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) =>
+                        const Icon(Icons.broken_image_outlined),
+                  );
+                },
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+        ],
         for (final (label, value) in rows)
           if (value != null && value.isNotEmpty)
             Padding(
