@@ -237,7 +237,7 @@ class _VehicleFormScreenState extends State<VehicleFormScreen> {
         );
       }
 
-      if (mounted) Navigator.of(context).pop();
+      if (mounted) Navigator.of(context).pop(true);
     } finally {
       if (mounted) setState(() => _saving = false);
     }

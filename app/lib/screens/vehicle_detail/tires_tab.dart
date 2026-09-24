@@ -111,8 +111,30 @@ class _TiresTabState extends State<TiresTab> {
   }
 
   Future<void> _delete(TireSet t) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Reifensatz löschen?'),
+        content: Text('${t.season.label} · ${t.dimension} wird entfernt.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Abbrechen'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Löschen'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
     await context.read<FuhrparkProvider>().deleteTireSet(t.id);
+    if (!mounted) return;
     setState(_reload);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Reifensatz gelöscht')),
+    );
   }
 
   Future<void> _openForm({TireSet? existing}) async {
@@ -121,7 +143,12 @@ class _TiresTabState extends State<TiresTab> {
       isScrollControlled: true,
       builder: (_) => _TireFormSheet(vehicleId: widget.vehicle.id, existing: existing),
     );
-    if (result == true) setState(_reload);
+    if (result == true && mounted) {
+      setState(_reload);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Reifensatz gespeichert')),
+      );
+    }
   }
 }
 

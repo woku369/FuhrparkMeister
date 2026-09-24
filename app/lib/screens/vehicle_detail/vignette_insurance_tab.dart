@@ -118,8 +118,12 @@ class _VignetteInsuranceTabState extends State<VignetteInsuranceTab> {
                         leading: const Icon(Icons.shield_outlined),
                         title: Text('${i.gesellschaft} · ${i.type.label}'),
                         subtitle: Text(
-                          'Polizze ${i.polizzennummer}'
-                          '${i.faelligkeitJaehrlichAm != null ? " · jährlich fällig am ${i.faelligkeitJaehrlichAm!.deDate}" : ""}',
+                          [
+                            if (i.polizzennummer.isNotEmpty)
+                              'Polizze ${i.polizzennummer}',
+                            if (i.faelligkeitJaehrlichAm != null)
+                              'jährlich fällig am ${i.faelligkeitJaehrlichAm!.deDate}',
+                          ].join(' · '),
                         ),
                         trailing: PopupMenuButton<String>(
                           onSelected: (a) {
@@ -143,13 +147,51 @@ class _VignetteInsuranceTabState extends State<VignetteInsuranceTab> {
   }
 
   Future<void> _deleteVignette(Vignette v) async {
+    final confirmed = await _confirmDelete(
+      title: 'Vignette löschen?',
+      content: 'Vignette ${v.jahr} wird entfernt.',
+    );
+    if (confirmed != true || !mounted) return;
     await context.read<FuhrparkProvider>().deleteVignette(v.id);
+    if (!mounted) return;
     setState(_reload);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Vignette gelöscht')),
+    );
   }
 
   Future<void> _deleteInsurance(Insurance i) async {
+    final confirmed = await _confirmDelete(
+      title: 'Versicherung löschen?',
+      content: '${i.gesellschaft.isEmpty ? "Versicherung" : i.gesellschaft} wird entfernt.',
+    );
+    if (confirmed != true || !mounted) return;
     await context.read<FuhrparkProvider>().deleteInsurance(i.id);
+    if (!mounted) return;
     setState(_reload);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Versicherung gelöscht')),
+    );
+  }
+
+  Future<bool?> _confirmDelete({required String title, required String content}) {
+    return showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(title),
+        content: Text(content),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Abbrechen'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Löschen'),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _openVignetteForm({Vignette? existing}) async {
@@ -162,7 +204,12 @@ class _VignetteInsuranceTabState extends State<VignetteInsuranceTab> {
         existing: existing,
       ),
     );
-    if (result == true) setState(_reload);
+    if (result == true && mounted) {
+      setState(_reload);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Vignette gespeichert')),
+      );
+    }
   }
 
   Future<void> _openInsuranceForm({Insurance? existing}) async {
@@ -175,7 +222,12 @@ class _VignetteInsuranceTabState extends State<VignetteInsuranceTab> {
         existing: existing,
       ),
     );
-    if (result == true) setState(_reload);
+    if (result == true && mounted) {
+      setState(_reload);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Versicherung gespeichert')),
+      );
+    }
   }
 }
 
@@ -399,7 +451,7 @@ class _InsuranceFormSheetState extends State<_InsuranceFormSheet> {
             const SizedBox(height: 12),
             TextField(
               controller: _polizzennummer,
-              decoration: const InputDecoration(labelText: 'Polizzennummer *'),
+              decoration: const InputDecoration(labelText: 'Polizzennummer'),
             ),
             const SizedBox(height: 12),
             DropdownButtonFormField<InsuranceType>(
@@ -447,7 +499,10 @@ class _InsuranceFormSheetState extends State<_InsuranceFormSheet> {
 
   Future<void> _save() async {
     if (_saving) return;
-    if (_gesellschaft.text.trim().isEmpty || _polizzennummer.text.trim().isEmpty) {
+    if (_gesellschaft.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Bitte Gesellschaft angeben')),
+      );
       return;
     }
     setState(() => _saving = true);

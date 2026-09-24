@@ -83,10 +83,15 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  void _openForm(BuildContext context) {
-    Navigator.of(context).push(
+  Future<void> _openForm(BuildContext context) async {
+    final result = await Navigator.of(context).push<bool>(
       MaterialPageRoute(builder: (_) => const VehicleFormScreen()),
     );
+    if (result == true && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Fahrzeug gespeichert')),
+      );
+    }
   }
 }
 

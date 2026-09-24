@@ -36,11 +36,18 @@ class VehicleDetailScreen extends StatelessWidget {
           actions: [
             IconButton(
               icon: const Icon(Icons.edit_outlined),
-              onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => VehicleFormScreen(vehicle: v),
-                ),
-              ),
+              onPressed: () async {
+                final result = await Navigator.of(context).push<bool>(
+                  MaterialPageRoute(
+                    builder: (_) => VehicleFormScreen(vehicle: v),
+                  ),
+                );
+                if (result == true && context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Fahrzeug gespeichert')),
+                  );
+                }
+              },
             ),
             IconButton(
               icon: const Icon(Icons.delete_outline),
