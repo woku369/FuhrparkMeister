@@ -58,7 +58,11 @@ jobs:
 
       - run: flutter pub get
       - run: flutter analyze
-      - run: flutter build apk --release
+      - name: APK bauen (versionCode = eindeutige, strikt steigende GitHub-Run-Nummer)
+        run: |
+          flutter build apk --release \
+            --build-name=1.0.0 \
+            --build-number=${{ github.run_number }}
 
       - name: APK als Artefakt sichern
         uses: actions/upload-artifact@v4
@@ -72,9 +76,13 @@ jobs:
           tag_name: latest-apk
           name: "FuhrparkMeister – aktueller Build"
           body: >
-            Automatisch gebaute APK vom letzten Push auf
-            `${{ github.ref_name }}` (Commit ${{ github.sha }}).
+            Build-Nummer (versionCode) ${{ github.run_number }} · Version 1.0.0 ·
+            Commit `${{ github.sha }}` auf `${{ github.ref_name }}`.
             Direkt auf dem Handy herunterladen und installieren
-            ("Installation aus unbekannten Quellen" erlauben).
+            ("Installation aus unbekannten Quellen" erlauben). In den
+            Android-App-Infos zu FuhrparkMeister lässt sich die installierte
+            Version gegenprüfen (Einstellungen → Apps → FuhrparkMeister →
+            Erweitert), dort steht "1.0.0 (${{ github.run_number }})" -
+            das sollte mit der hier verlinkten Nummer übereinstimmen.
           prerelease: true
           files: app/build/app/outputs/flutter-apk/app-release.apk

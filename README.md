@@ -87,6 +87,14 @@ flutter build apk --release    # installierbare APK
 
 Die fertige APK liegt danach unter `app/build/app/outputs/flutter-apk/app-release.apk`.
 
+**Build-Nummer (versionCode):** Die CI-Pipeline setzt bei jedem Build automatisch `--build-number=<GitHub-Actions-Lauf-Nummer>`, damit jede veröffentlichte APK einen garantiert höheren `versionCode` als die vorherige hat – Android verweigert sonst je nach Gerät/Android-Version die Installation über eine bestehende App mit identischem `versionCode`, selbst bei gleicher Signatur ("Paketkonflikt"). Baust du lokal eine APK, die eine über CI installierte App ersetzen soll, ebenfalls eine höhere Nummer mitgeben, z. B.:
+
+```bash
+flutter build apk --release --build-name=1.0.0 --build-number=999
+```
+
+Die aktuell installierte Build-Nummer steht unter Android-Einstellungen → Apps → FuhrparkMeister → Erweitert als "1.0.0 (<Nummer>)".
+
 **Update-Fähigkeit / Signierschlüssel:** Damit eine neu gebaute APK die alte auf dem Handy als Update ersetzt (statt "Installation fehlgeschlagen" wegen unterschiedlicher Signatur), müssen beide mit demselben Debug-Key signiert sein. Im Repo liegt dafür ein fester, dauerhafter Debug-Keystore unter `ci/debug.keystore` (Standard-Passwörter `android`/`androiddebugkey`, wie Androids eigener Debug-Keystore – unkritisch, da nur für Sideload-Installationen, nicht für den Play Store). Die CI-Pipeline nutzt ihn automatisch. Für lokale Builds, die mit den CI-Builds austauschbar bleiben sollen, einmalig:
 
 ```bash

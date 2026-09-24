@@ -13,6 +13,7 @@
 - [x] Wartungs-To-Dos je Fahrzeug (unabhängig von Prüfterminen)
 - [x] Wartungshistorie-Export (erledigte Prüfungen + To-Dos, teilbar) als Merkliste für z. B. Fahrzeugverkauf
 - [x] Kilometerstand bei Ankauf, Anzahl Vorbesitzer als Fahrzeug-Stammdaten
+- [x] Automatische Build-Versionierung (versionCode = GitHub-Actions-Lauf-Nummer) gegen Paketkonflikte bei der Installation
 
 ## Offen
 - [ ] Erstmaliges `flutter create . --platforms=android` in der Zielumgebung ausführen und `flutter analyze` / `flutter build apk` verifizieren
