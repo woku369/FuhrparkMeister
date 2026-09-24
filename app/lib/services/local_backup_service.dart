@@ -45,6 +45,9 @@ class LocalBackupService {
     }
 
     final zipBytes = ZipEncoder().encode(archive);
+    if (zipBytes == null) {
+      throw StateError('ZIP-Erstellung fehlgeschlagen.');
+    }
     final tempDir = await getTemporaryDirectory();
     final timestamp = DateFormat('yyyy-MM-dd_HHmm').format(DateTime.now());
     final zipFile = File(
