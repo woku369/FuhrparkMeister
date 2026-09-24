@@ -114,10 +114,10 @@ class _VehicleFormScreenState extends State<VehicleFormScreen> {
                         child: _buildFotoPreview(),
                       ),
                     ),
-                    Positioned(
+                    const Positioned(
                       right: 4,
                       bottom: 4,
-                      child: const CircleAvatar(
+                      child: CircleAvatar(
                         radius: 14,
                         child: Icon(Icons.edit, size: 14),
                       ),
