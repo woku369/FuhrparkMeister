@@ -1,0 +1,56 @@
+name: APK bauen
+
+on:
+  push:
+    branches:
+      - claude/fleet-management-app-waoyst
+      - main
+    paths:
+      - "app/**"
+      - ".github/workflows/build-apk.yml"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Android-Plattform-Ordner erzeugen (falls im Repo nicht vorhanden)
+        run: |
+          if [ ! -d android ]; then
+            flutter create . --platforms=android --org at.kraeutermeister
+          fi
+
+      - run: flutter pub get
+      - run: flutter analyze
+      - run: flutter build apk --release
+
+      - name: APK als Artefakt sichern
+        uses: actions/upload-artifact@v4
+        with:
+          name: fuhrparkmeister-apk
+          path: app/build/app/outputs/flutter-apk/app-release.apk
+
+      - name: Als herunterladbares Release veröffentlichen
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest-apk
+          name: "FuhrparkMeister – aktueller Build"
+          body: >
+            Automatisch gebaute APK vom letzten Push auf
+            `${{ github.ref_name }}` (Commit ${{ github.sha }}).
+            Direkt auf dem Handy herunterladen und installieren
+            ("Installation aus unbekannten Quellen" erlauben).
+          prerelease: true
+          files: app/build/app/outputs/flutter-apk/app-release.apk

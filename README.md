@@ -68,6 +68,15 @@ flutter build apk --release    # installierbare APK
 
 Die fertige APK liegt danach unter `app/build/app/outputs/flutter-apk/app-release.apk`.
 
+### Alternative: APK ohne eigenen PC/Flutter-Installation bauen (z. B. vom Handy aus)
+
+Ein GitHub-Actions-Workflow (`.github/workflows/build-apk.yml`) baut die APK bei jedem Push auf diesen Branch automatisch in der Cloud – auf dem Handy selbst ist dafür kein Flutter nötig:
+
+1. Auf GitHub im Tab **Actions** den Workflow „APK bauen" öffnen und **Run workflow** antippen (geht auch über die GitHub-App oder den mobilen Browser, ganz ohne PC)
+2. Nach ca. 3–5 Minuten ist der Build fertig
+3. Die APK liegt danach direkt zum Download unter **Releases → „FuhrparkMeister – aktueller Build"** (Tag `latest-apk`) – auf dem Handy antippen, herunterladen, „Installation aus unbekannten Quellen" erlauben, installieren
+4. Alternativ liegt die APK auch als Artefakt am jeweiligen Actions-Lauf (verfällt nach 90 Tagen, braucht GitHub-Login und muss entzippt werden – der Release-Download unter Punkt 3 ist der einfachere Weg)
+
 ---
 
 ## Cloud-Sync einrichten (Google Drive)
