@@ -41,13 +41,11 @@ jobs:
             rm -f test/widget_test.dart
           fi
 
-      - name: Android-Gradle-Konfiguration nachschärfen (Desugaring, compileSdk)
+      - name: Core Library Desugaring aktivieren (von flutter_local_notifications benötigt)
         run: |
           cat >> android/app/build.gradle.kts <<'EOF'
 
           android {
-              compileSdk = 36
-
               compileOptions {
                   isCoreLibraryDesugaringEnabled = true
               }
@@ -55,19 +53,6 @@ jobs:
 
           dependencies {
               coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
-          }
-          EOF
-
-      - name: compileSdk 36 auch für Plugin-Subprojekte erzwingen (z. B. file_picker)
-        run: |
-          cat >> android/build.gradle.kts <<'EOF'
-
-          subprojects {
-              plugins.withId("com.android.library") {
-                  extensions.configure<com.android.build.gradle.LibraryExtension> {
-                      compileSdk = 36
-                  }
-              }
           }
           EOF
 

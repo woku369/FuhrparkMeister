@@ -30,7 +30,7 @@ Fuhrparkverwaltung für **Autos, Anhänger, Motorräder, Wohnwagen und Fahrräde
 - **Dokumenten-Galerie**: Fotos von Zulassungsschein, Polizze, Rechnungen etc. je Fahrzeug, kategorisiert, lokal gespeichert
 - **Termine-Übersicht**: alle offenen Fälligkeiten fahrzeugübergreifend, farblich nach Dringlichkeit sortiert
 - **Offline-fähig**: lokale SQLite-Datenbank als primärer Datenspeicher
-- **Lokales ZIP-Backup**: Export/Import ohne jede Einrichtung – Export öffnet die Android-Systemfreigabe (Downloads, E-Mail, andere Cloud-Apps, ...), Import liest eine solche Datei wieder ein
+- **Lokales ZIP-Backup**: Export/Import ohne jede Einrichtung – Export legt die Datei im App-eigenen Ordner ab und öffnet zusätzlich die Android-Systemfreigabe (Downloads, E-Mail, andere Cloud-Apps, ...), Import liest die neueste ZIP-Datei aus diesem Ordner ein
 - **Backup & Geräte-Sync über Google Drive**: manueller Voll-Snapshot (Datenbank + Dokumenten-Fotos) in einen eigenen Drive-Ordner hoch- und herunterladen, für Nutzung auf mehreren Geräten
 
 ---
@@ -64,8 +64,6 @@ Außerdem verlangt `flutter_local_notifications` **Core Library Desugaring** –
 
 ```kotlin
 android {
-    compileSdk = 36
-
     compileOptions {
         isCoreLibraryDesugaringEnabled = true
     }
@@ -76,17 +74,7 @@ dependencies {
 }
 ```
 
-**Hinweis zu `file_picker`:** `flutter_plugin_android_lifecycle` (eine von mehreren Plugins gemeinsam genutzte transitive Abhängigkeit, u. a. über `file_picker`) verlangt `compileSdk 36` fürs jeweilige Plugin-eigene Gradle-Subprojekt – unabhängig von der gewählten `file_picker`-Version, da nur eine gemeinsame `flutter_plugin_android_lifecycle`-Version für alle Plugins aufgelöst wird. `compileSdk = 36` im App-Modul allein reicht nicht, jedes Plugin-Subprojekt braucht es einzeln. Ein `subprojects { afterEvaluate { ... } }`-Workaround scheitert reproduzierbar an "Cannot run Project.afterEvaluate(Action) when the project is already evaluated" (Timing-Konflikt mit Flutters `evaluationDependsOn(":app")`). Stattdessen an `android/build.gradle.kts` (Root, nicht `app/`) anhängen – reagiert auf die Plugin-Anwendung statt auf den Evaluationszeitpunkt und ist deshalb robust:
-
-```kotlin
-subprojects {
-    plugins.withId("com.android.library") {
-        extensions.configure<com.android.build.gradle.LibraryExtension> {
-            compileSdk = 36
-        }
-    }
-}
-```
+**Warum kein `file_picker`:** Für den lokalen Backup-Import wäre ein generischer Datei-Dialog (Paket `file_picker`) naheliegend gewesen. Dessen transitive Abhängigkeit `flutter_plugin_android_lifecycle` verlangt aber `compileSdk 36` fürs Plugin-eigene Gradle-Subprojekt, und zwar unabhängig von der gewählten `file_picker`-Version (nur eine gemeinsame `flutter_plugin_android_lifecycle`-Version wird für alle Plugins im Projekt aufgelöst). Weder `compileSdk = 36` im App-Modul allein noch ein `subprojects { afterEvaluate { ... } }`- oder `subprojects { plugins.withId("com.android.library") { ... } }`-Workaround in `android/build.gradle.kts` haben das zuverlässig behoben (Timing-Konflikte mit Flutters `evaluationDependsOn(":app")` bzw. das Plugin setzt seinen eigenen `compileSdk` nach unserem Override erneut). Der lokale Backup-Import liest deshalb stattdessen die neueste `.zip`-Datei aus einem festen, app-eigenen Ordner (siehe `LocalBackupService`/`BackupScreen`) statt aus einem frei wählbaren Pfad.
 
 ### Starten / Bauen
 

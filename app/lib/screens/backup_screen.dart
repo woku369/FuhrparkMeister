@@ -1,4 +1,3 @@
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:provider/provider.dart';
@@ -20,12 +19,16 @@ class _BackupScreenState extends State<BackupScreen> {
   GoogleSignInAccount? _account;
   bool _busy = false;
   String? _lastAction;
+  String? _backupDirPath;
 
   @override
   void initState() {
     super.initState();
     _service.signInSilently().then((account) {
       if (mounted) setState(() => _account = account);
+    });
+    LocalBackupService.backupDirPath().then((path) {
+      if (mounted) setState(() => _backupDirPath = path);
     });
   }
 
@@ -50,11 +53,20 @@ class _BackupScreenState extends State<BackupScreen> {
                   const Text(
                     'Funktioniert sofort, ohne Google-Konto-Einrichtung. '
                     'Export erzeugt eine ZIP-Datei mit allen Daten und Fotos '
-                    'und öffnet die Android-Systemfreigabe – du entscheidest '
-                    'selbst, wo sie landet (Downloads, E-Mail an dich selbst, '
-                    'eine Cloud-App, ...). Import liest eine solche Datei '
-                    'wieder ein und ersetzt den kompletten lokalen Stand.',
+                    'im App-eigenen Ordner und öffnet zusätzlich die '
+                    'Android-Systemfreigabe (Downloads, E-Mail, eine '
+                    'Cloud-App, ...). Import liest die neueste ZIP-Datei aus '
+                    'genau diesem Ordner und ersetzt den kompletten lokalen '
+                    'Stand – eine von einem anderen Gerät empfangene Datei '
+                    'also vorher per Datei-Manager dorthin kopieren.',
                   ),
+                  if (_backupDirPath != null) ...[
+                    const SizedBox(height: 8),
+                    SelectableText(
+                      _backupDirPath!,
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ],
                   const SizedBox(height: 12),
                   Row(
                     children: [
@@ -70,7 +82,7 @@ class _BackupScreenState extends State<BackupScreen> {
                         child: OutlinedButton.icon(
                           onPressed: _busy ? null : _confirmImportLocal,
                           icon: const Icon(Icons.file_open_outlined),
-                          label: const Text('Importieren'),
+                          label: const Text('Neuestes importieren'),
                         ),
                       ),
                     ],
@@ -171,21 +183,14 @@ class _BackupScreenState extends State<BackupScreen> {
   }
 
   Future<void> _confirmImportLocal() async {
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['zip'],
-    );
-    final path = result?.files.single.path;
-    if (path == null || !mounted) return;
-
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Backup importieren?'),
-        content: const Text(
+        title: const Text('Neuestes Backup importieren?'),
+        content: Text(
           'Alle lokalen Daten auf diesem Gerät werden durch den Inhalt der '
-          'gewählten Datei ersetzt. Nicht gesicherte lokale Änderungen gehen '
-          'dabei verloren.',
+          'neuesten .zip-Datei in ${_backupDirPath ?? "dem Backup-Ordner"} '
+          'ersetzt. Nicht gesicherte lokale Änderungen gehen dabei verloren.',
         ),
         actions: [
           TextButton(
@@ -206,7 +211,7 @@ class _BackupScreenState extends State<BackupScreen> {
       _lastAction = null;
     });
     try {
-      await LocalBackupService.importFromZip(path);
+      await LocalBackupService.importLatestFromBackupDir();
       if (mounted) {
         await context.read<FuhrparkProvider>().loadVehicles();
       }

@@ -10,17 +10,34 @@ import '../database/database_helper.dart';
 import 'document_storage.dart';
 
 /// Backup als ZIP-Datei auf dem Gerät - unabhängig von Google Drive.
-/// Export erzeugt eine Datei, die der Nutzer über die Android-System-
-/// freigabe selbst irgendwohin ablegen kann (Downloads, E-Mail, eine
-/// andere Cloud-App, ...). Import liest eine solche Datei wieder ein
-/// und ersetzt den kompletten lokalen Datenbestand ("letzter Stand
+/// Export legt die Datei im App-eigenen externen Ordner ab (sichtbar für
+/// Datei-Manager unter Android/data/<paket>/files/, keine Berechtigung
+/// nötig) und öffnet zusätzlich die Android-Systemfreigabe. Import liest
+/// die neueste ZIP-Datei aus genau diesem Ordner ein - eine von einem
+/// anderen Gerät empfangene Backup-Datei muss man also mit einem
+/// Datei-Manager dorthin kopieren. Bewusst ohne allgemeinen Datei-Dialog
+/// (file_picker), weil dessen Android-Abhängigkeiten mit den anderen
+/// Plugins dieser App nicht kompilierbar sind (siehe ROADMAP).
+/// Import ersetzt den kompletten lokalen Datenbestand ("letzter Stand
 /// gewinnt", wie beim Drive-Backup - kein Merge einzelner Datensätze).
 class LocalBackupService {
   static const _dataEntryName = 'backup.json';
   static const _documentsPrefix = 'documents/';
 
-  /// Baut das ZIP im App-Cache-Verzeichnis und gibt die Datei zurück.
-  /// Der Aufrufer kümmert sich ums Teilen/Speichern (z. B. via share_plus).
+  static Future<Directory> _backupDir() async {
+    final dir = await getExternalStorageDirectory();
+    if (dir == null) {
+      throw StateError('Kein externer Speicher verfügbar.');
+    }
+    return dir;
+  }
+
+  /// Ordnerpfad, in dem Backups liegen - zur Anzeige in der UI, damit
+  /// der Nutzer weiß, wohin er eine empfangene Datei kopieren muss.
+  static Future<String> backupDirPath() async => (await _backupDir()).path;
+
+  /// Baut das ZIP im Backup-Ordner und gibt die Datei zurück. Der
+  /// Aufrufer kümmert sich zusätzlich ums Teilen (z. B. via share_plus).
   static Future<File> exportToZip() async {
     final raw = await DatabaseHelper.instance.exportAllRaw();
     final json = jsonEncode({
@@ -48,13 +65,32 @@ class LocalBackupService {
     if (zipBytes == null) {
       throw StateError('ZIP-Erstellung fehlgeschlagen.');
     }
-    final tempDir = await getTemporaryDirectory();
+    final backupDir = await _backupDir();
     final timestamp = DateFormat('yyyy-MM-dd_HHmm').format(DateTime.now());
     final zipFile = File(
-      p.join(tempDir.path, 'fuhrparkmeister_backup_$timestamp.zip'),
+      p.join(backupDir.path, 'fuhrparkmeister_backup_$timestamp.zip'),
     );
     await zipFile.writeAsBytes(zipBytes);
     return zipFile;
+  }
+
+  /// Sucht die neueste .zip-Datei im Backup-Ordner und importiert sie.
+  static Future<void> importLatestFromBackupDir() async {
+    final backupDir = await _backupDir();
+    final zips = await backupDir
+        .list()
+        .where((e) => e is File && e.path.toLowerCase().endsWith('.zip'))
+        .cast<File>()
+        .toList();
+    if (zips.isEmpty) {
+      throw StateError(
+        'Kein Backup gefunden in ${backupDir.path}. Datei dort ablegen und erneut versuchen.',
+      );
+    }
+    zips.sort(
+      (a, b) => b.lastModifiedSync().compareTo(a.lastModifiedSync()),
+    );
+    await importFromZip(zips.first.path);
   }
 
   /// Liest eine zuvor exportierte ZIP-Datei ein und ersetzt den
