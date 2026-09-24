@@ -22,7 +22,7 @@ Fuhrparkverwaltung für **Autos, Anhänger, Motorräder, Wohnwagen und Fahrräde
 
 ## Features
 
-- **Fahrzeugverwaltung**: Auto, Anhänger, Motorrad, Wohnwagen, Fahrrad – mit Marke, Modell, Kennzeichen, Fahrgestellnummer, Baujahr, Farbe, Kaufdatum
+- **Fahrzeugverwaltung**: Auto, Anhänger, Motorrad, Wohnwagen, Fahrrad – mit Marke, Modell, Kennzeichen, Fahrgestellnummer, Baujahr, Farbe, Kaufdatum, Kilometerstand bei Ankauf, Anzahl Vorbesitzer
 - **Prüftermine mit Erinnerung**: §57a-Begutachtung (Pickerl), Anhängerprüfung, Service, Fahrrad-Check, Sonstiges – lokale Push-Erinnerung X Tage vorher (konfigurierbar)
 - **Reifenverwaltung**: benötigte Dimension pro Fahrzeug ("was brauche ich"), erfasste Reifensätze mit Saison, Dimension, Hersteller, Profiltiefe und Status montiert/im Lager ("was ist drauf"), Wechseltermin ("wann")
 - **Vignetten**: Jahr, Gültigkeitszeitraum, Preis, digital/klassisch – Erinnerung 14 Tage vor Ablauf

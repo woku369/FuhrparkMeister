@@ -27,6 +27,8 @@ class _VehicleFormScreenState extends State<VehicleFormScreen> {
   late final TextEditingController _farbe;
   late final TextEditingController _sollDimension;
   late final TextEditingController _notizen;
+  late final TextEditingController _kmBeiAnkauf;
+  late final TextEditingController _vorbesitzer;
   DateTime? _kaufdatum;
   bool _saving = false;
 
@@ -46,6 +48,8 @@ class _VehicleFormScreenState extends State<VehicleFormScreen> {
     _farbe = TextEditingController(text: v?.farbe ?? '');
     _sollDimension = TextEditingController(text: v?.sollReifendimension ?? '');
     _notizen = TextEditingController(text: v?.notizen ?? '');
+    _kmBeiAnkauf = TextEditingController(text: v?.kilometerstandBeiAnkauf?.toString() ?? '');
+    _vorbesitzer = TextEditingController(text: v?.anzahlVorbesitzer?.toString() ?? '');
     _kaufdatum = v?.kaufdatum;
   }
 
@@ -60,6 +64,8 @@ class _VehicleFormScreenState extends State<VehicleFormScreen> {
     _farbe.dispose();
     _sollDimension.dispose();
     _notizen.dispose();
+    _kmBeiAnkauf.dispose();
+    _vorbesitzer.dispose();
     super.dispose();
   }
 
@@ -151,6 +157,28 @@ class _VehicleFormScreenState extends State<VehicleFormScreen> {
               ),
             ),
             const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: TextFormField(
+                    controller: _kmBeiAnkauf,
+                    decoration: const InputDecoration(
+                      labelText: 'Kilometerstand bei Ankauf',
+                    ),
+                    keyboardType: TextInputType.number,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: TextFormField(
+                    controller: _vorbesitzer,
+                    decoration: const InputDecoration(labelText: 'Anzahl Vorbesitzer'),
+                    keyboardType: TextInputType.number,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
             TextFormField(
               controller: _sollDimension,
               decoration: const InputDecoration(
@@ -211,6 +239,8 @@ class _VehicleFormScreenState extends State<VehicleFormScreen> {
         v.baujahr = int.tryParse(_baujahr.text.trim());
         v.farbe = _farbe.text.trim().isEmpty ? null : _farbe.text.trim();
         v.kaufdatum = _kaufdatum;
+        v.kilometerstandBeiAnkauf = int.tryParse(_kmBeiAnkauf.text.trim());
+        v.anzahlVorbesitzer = int.tryParse(_vorbesitzer.text.trim());
         v.sollReifendimension = _sollDimension.text.trim().isEmpty
             ? null
             : _sollDimension.text.trim();
@@ -230,6 +260,8 @@ class _VehicleFormScreenState extends State<VehicleFormScreen> {
           baujahr: int.tryParse(_baujahr.text.trim()),
           farbe: _farbe.text.trim().isEmpty ? null : _farbe.text.trim(),
           kaufdatum: _kaufdatum,
+          kilometerstandBeiAnkauf: int.tryParse(_kmBeiAnkauf.text.trim()),
+          anzahlVorbesitzer: int.tryParse(_vorbesitzer.text.trim()),
           sollReifendimension: _sollDimension.text.trim().isEmpty
               ? null
               : _sollDimension.text.trim(),

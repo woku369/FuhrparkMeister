@@ -19,6 +19,8 @@ class OverviewTab extends StatelessWidget {
       ('Baujahr', vehicle.baujahr?.toString()),
       ('Farbe', vehicle.farbe),
       ('Kaufdatum', vehicle.kaufdatum?.deDate),
+      ('Kilometerstand bei Ankauf', vehicle.kilometerstandBeiAnkauf?.toString()),
+      ('Anzahl Vorbesitzer', vehicle.anzahlVorbesitzer?.toString()),
       ('Benötigte Reifendimension', vehicle.sollReifendimension),
     ];
 

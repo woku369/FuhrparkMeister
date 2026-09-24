@@ -5,6 +5,7 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
 import '../database/database_helper.dart';
+import '../models/inspection.dart';
 import '../models/vehicle.dart';
 
 /// Baut eine lesbare Wartungshistorie aus erledigten Prüfterminen und
@@ -33,6 +34,10 @@ class HistoryExportService {
       if (vehicle.baujahr != null) 'Baujahr: ${vehicle.baujahr}',
       if (vehicle.fahrgestellnummer != null && vehicle.fahrgestellnummer!.isNotEmpty)
         'Fahrgestellnummer: ${vehicle.fahrgestellnummer}',
+      if (vehicle.kilometerstandBeiAnkauf != null)
+        'Kilometerstand bei Ankauf: ${vehicle.kilometerstandBeiAnkauf} km',
+      if (vehicle.anzahlVorbesitzer != null)
+        'Vorbesitzer: ${vehicle.anzahlVorbesitzer}',
     ];
     if (stammdaten.isNotEmpty) buffer.writeln(stammdaten.join(' · '));
     buffer.writeln('Erstellt am ${_deDate(DateTime.now())} mit FuhrparkMeister');

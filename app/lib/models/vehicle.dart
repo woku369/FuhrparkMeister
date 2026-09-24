@@ -49,6 +49,8 @@ class Vehicle {
   int? baujahr;
   String? farbe;
   DateTime? kaufdatum;
+  int? kilometerstandBeiAnkauf;
+  int? anzahlVorbesitzer;
   String? sollReifendimension;
   String? notizen;
   final DateTime createdAt;
@@ -65,6 +67,8 @@ class Vehicle {
     this.baujahr,
     this.farbe,
     this.kaufdatum,
+    this.kilometerstandBeiAnkauf,
+    this.anzahlVorbesitzer,
     this.sollReifendimension,
     this.notizen,
     required this.createdAt,
@@ -87,6 +91,8 @@ class Vehicle {
       'baujahr': baujahr,
       'farbe': farbe,
       'kaufdatum': kaufdatum?.toIso8601String(),
+      'kilometerstand_bei_ankauf': kilometerstandBeiAnkauf,
+      'anzahl_vorbesitzer': anzahlVorbesitzer,
       'soll_reifendimension': sollReifendimension,
       'notizen': notizen,
       'created_at': createdAt.toIso8601String(),
@@ -111,6 +117,8 @@ class Vehicle {
       kaufdatum: map['kaufdatum'] != null
           ? DateTime.parse(map['kaufdatum'] as String)
           : null,
+      kilometerstandBeiAnkauf: map['kilometerstand_bei_ankauf'] as int?,
+      anzahlVorbesitzer: map['anzahl_vorbesitzer'] as int?,
       sollReifendimension: map['soll_reifendimension'] as String?,
       notizen: map['notizen'] as String?,
       createdAt: DateTime.parse(map['created_at'] as String),

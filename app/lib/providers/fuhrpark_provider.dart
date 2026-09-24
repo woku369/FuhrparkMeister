@@ -46,6 +46,8 @@ class FuhrparkProvider extends ChangeNotifier {
     int? baujahr,
     String? farbe,
     DateTime? kaufdatum,
+    int? kilometerstandBeiAnkauf,
+    int? anzahlVorbesitzer,
     String? sollReifendimension,
     String? notizen,
   }) async {
@@ -61,6 +63,8 @@ class FuhrparkProvider extends ChangeNotifier {
       baujahr: baujahr,
       farbe: farbe,
       kaufdatum: kaufdatum,
+      kilometerstandBeiAnkauf: kilometerstandBeiAnkauf,
+      anzahlVorbesitzer: anzahlVorbesitzer,
       sollReifendimension: sollReifendimension,
       notizen: notizen,
       createdAt: now,
