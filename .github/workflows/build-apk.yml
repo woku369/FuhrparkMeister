@@ -26,6 +26,12 @@ jobs:
         with:
           channel: stable
 
+      - name: Festen Debug-Keystore verwenden (statt zufällig neuem pro Lauf)
+        working-directory: .
+        run: |
+          mkdir -p ~/.android
+          cp ci/debug.keystore ~/.android/debug.keystore
+
       - name: Android-Plattform-Ordner erzeugen (falls im Repo nicht vorhanden)
         run: |
           if [ ! -d android ]; then

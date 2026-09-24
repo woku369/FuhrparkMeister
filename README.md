@@ -82,6 +82,15 @@ flutter build apk --release    # installierbare APK
 
 Die fertige APK liegt danach unter `app/build/app/outputs/flutter-apk/app-release.apk`.
 
+**Update-Fähigkeit / Signierschlüssel:** Damit eine neu gebaute APK die alte auf dem Handy als Update ersetzt (statt "Installation fehlgeschlagen" wegen unterschiedlicher Signatur), müssen beide mit demselben Debug-Key signiert sein. Im Repo liegt dafür ein fester, dauerhafter Debug-Keystore unter `ci/debug.keystore` (Standard-Passwörter `android`/`androiddebugkey`, wie Androids eigener Debug-Keystore – unkritisch, da nur für Sideload-Installationen, nicht für den Play Store). Die CI-Pipeline nutzt ihn automatisch. Für lokale Builds, die mit den CI-Builds austauschbar bleiben sollen, einmalig:
+
+```bash
+mkdir -p ~/.android
+cp ../ci/debug.keystore ~/.android/debug.keystore   # aus app/ heraus; Windows: %USERPROFILE%\.android\debug.keystore
+```
+
+Ohne diesen Schritt signiert die lokale Toolchain mit dem automatisch erzeugten, geräteeigenen Debug-Key – dann lassen sich lokale und CI-gebaute APKs nicht gegenseitig als Update installieren.
+
 ### Alternative: APK ohne eigenen PC/Flutter-Installation bauen (z. B. vom Handy aus)
 
 Ein GitHub-Actions-Workflow (`.github/workflows/build-apk.yml`) baut die APK bei jedem Push auf diesen Branch automatisch in der Cloud – auf dem Handy selbst ist dafür kein Flutter nötig:
