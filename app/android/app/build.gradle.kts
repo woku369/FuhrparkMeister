@@ -55,6 +55,12 @@ android {
             storePassword = "android"
             keyAlias = "androiddebugkey"
             keyPassword = "android"
+            // AGP lässt v1 (JAR-Signing) bei minSdk >= 24 standardmäßig weg,
+            // da v2 dafür allein ausreicht. Trotzdem explizit dazu, für
+            // maximale Kompatibilität mit älteren/abweichenden Installern -
+            // kostet nur etwas APK-Größe, kein Nachteil.
+            enableV1Signing = true
+            enableV2Signing = true
         }
     }
     buildTypes {
