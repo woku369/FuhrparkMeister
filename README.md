@@ -30,6 +30,7 @@ Fuhrparkverwaltung für **Autos, Anhänger, Motorräder, Wohnwagen und Fahrräde
 - **Dokumenten-Galerie**: Fotos von Zulassungsschein, Polizze, Rechnungen etc. je Fahrzeug, kategorisiert, lokal gespeichert
 - **Termine-Übersicht**: alle offenen Fälligkeiten fahrzeugübergreifend, farblich nach Dringlichkeit sortiert
 - **Offline-fähig**: lokale SQLite-Datenbank als primärer Datenspeicher
+- **Lokales ZIP-Backup**: Export/Import ohne jede Einrichtung – Export öffnet die Android-Systemfreigabe (Downloads, E-Mail, andere Cloud-Apps, ...), Import liest eine solche Datei wieder ein
 - **Backup & Geräte-Sync über Google Drive**: manueller Voll-Snapshot (Datenbank + Dokumenten-Fotos) in einen eigenen Drive-Ordner hoch- und herunterladen, für Nutzung auf mehreren Geräten
 
 ---

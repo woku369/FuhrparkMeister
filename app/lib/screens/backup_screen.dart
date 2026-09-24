@@ -1,9 +1,12 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../providers/fuhrpark_provider.dart';
 import '../services/drive_sync_service.dart';
+import '../services/local_backup_service.dart';
 
 class BackupScreen extends StatefulWidget {
   const BackupScreen({super.key});
@@ -33,6 +36,50 @@ class _BackupScreenState extends State<BackupScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Lokales Backup (ZIP-Datei)',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Funktioniert sofort, ohne Google-Konto-Einrichtung. '
+                    'Export erzeugt eine ZIP-Datei mit allen Daten und Fotos '
+                    'und öffnet die Android-Systemfreigabe – du entscheidest '
+                    'selbst, wo sie landet (Downloads, E-Mail an dich selbst, '
+                    'eine Cloud-App, ...). Import liest eine solche Datei '
+                    'wieder ein und ersetzt den kompletten lokalen Stand.',
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: _busy ? null : _exportLocal,
+                          icon: const Icon(Icons.ios_share_outlined),
+                          label: const Text('Exportieren'),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: _busy ? null : _confirmImportLocal,
+                          icon: const Icon(Icons.file_open_outlined),
+                          label: const Text('Importieren'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
           Card(
             child: Padding(
               padding: const EdgeInsets.all(16),
@@ -98,6 +145,79 @@ class _BackupScreenState extends State<BackupScreen> {
         ],
       ),
     );
+  }
+
+  Future<void> _exportLocal() async {
+    setState(() {
+      _busy = true;
+      _lastAction = null;
+    });
+    try {
+      final zipFile = await LocalBackupService.exportToZip();
+      await SharePlus.instance.share(
+        ShareParams(
+          files: [XFile(zipFile.path)],
+          text: 'FuhrparkMeister Backup',
+        ),
+      );
+      setState(
+        () => _lastAction = 'Backup exportiert: ${TimeOfDay.now().format(context)}',
+      );
+    } catch (e) {
+      _showError('Export fehlgeschlagen: $e');
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _confirmImportLocal() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['zip'],
+    );
+    final path = result?.files.single.path;
+    if (path == null || !mounted) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Backup importieren?'),
+        content: const Text(
+          'Alle lokalen Daten auf diesem Gerät werden durch den Inhalt der '
+          'gewählten Datei ersetzt. Nicht gesicherte lokale Änderungen gehen '
+          'dabei verloren.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Abbrechen'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Importieren'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    setState(() {
+      _busy = true;
+      _lastAction = null;
+    });
+    try {
+      await LocalBackupService.importFromZip(path);
+      if (mounted) {
+        await context.read<FuhrparkProvider>().loadVehicles();
+      }
+      setState(
+        () => _lastAction = 'Backup importiert: ${TimeOfDay.now().format(context)}',
+      );
+    } catch (e) {
+      _showError('Import fehlgeschlagen: $e');
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
   }
 
   Future<void> _toggleSignIn() async {
