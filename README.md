@@ -76,6 +76,18 @@ dependencies {
 }
 ```
 
+Das `compileSdk = 36` in `android/app/build.gradle.kts` betrifft nur unser eigenes App-Modul. Plugins wie `file_picker` bringen ein **eigenes** Gradle-Subprojekt mit, das den von der Flutter-SDK-Vorlage vorgegebenen (niedrigeren) `compileSdk` verwendet – deshalb zusätzlich an `android/build.gradle.kts` (Root, nicht `app/`) anhängen:
+
+```kotlin
+subprojects {
+    afterEvaluate {
+        extensions.findByType(com.android.build.gradle.BaseExtension::class.java)?.let {
+            it.compileSdkVersion(36)
+        }
+    }
+}
+```
+
 ### Starten / Bauen
 
 ```bash
