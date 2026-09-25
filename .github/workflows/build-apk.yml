@@ -13,6 +13,14 @@ on:
 permissions:
   contents: write
 
+# Verhindert, dass zwei schnell aufeinanderfolgende Pushes parallel bauen
+# und ums Veröffentlichen des Releases wettlaufen - passiert, gewinnt
+# nicht garantiert der neuere Commit. Ein neuer Lauf auf demselben Branch
+# bricht einen noch laufenden älteren stattdessen sauber ab.
+concurrency:
+  group: build-apk-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
