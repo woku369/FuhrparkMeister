@@ -1,6 +1,7 @@
 /// Ein berechneter Termin für die Übersicht - fasst Prüftermine, Vignetten-
-/// Ablauf und Versicherungsfälligkeiten in einer gemeinsamen Liste zusammen.
-enum ReminderSource { inspection, vignette, insurance }
+/// Ablauf, Versicherungsfälligkeiten, Reifenwechsel und terminierte
+/// Wartungs-To-Dos in einer gemeinsamen Liste zusammen.
+enum ReminderSource { inspection, vignette, insurance, tire, maintenance }
 
 class Reminder {
   final ReminderSource source;

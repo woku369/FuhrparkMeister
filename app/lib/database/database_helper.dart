@@ -8,13 +8,14 @@ import '../models/tire_set.dart';
 import '../models/vehicle.dart';
 import '../models/vehicle_document.dart';
 import '../models/vignette.dart';
+import '../models/workshop.dart';
 
 class DatabaseHelper {
   DatabaseHelper._();
   static final DatabaseHelper instance = DatabaseHelper._();
 
   static const _dbName = 'fuhrparkmeister.db';
-  static const _dbVersion = 5;
+  static const _dbVersion = 6;
 
   static const _createMaintenanceTasksTable = '''
     CREATE TABLE maintenance_tasks (
@@ -24,11 +25,24 @@ class DatabaseHelper {
       notizen TEXT,
       erledigt INTEGER NOT NULL DEFAULT 0,
       erstellt_am TEXT NOT NULL,
-      erledigt_am TEXT
+      erledigt_am TEXT,
+      faellig_am TEXT,
+      erinnerung_tage_vorher INTEGER NOT NULL DEFAULT 3
     )
   ''';
   static const _createMaintenanceTasksIndex =
       'CREATE INDEX idx_maintenance_tasks_vehicle ON maintenance_tasks(vehicle_id)';
+
+  static const _createWorkshopsTable = '''
+    CREATE TABLE workshops (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      telefon TEXT,
+      adresse TEXT,
+      pruefstelle_57a INTEGER NOT NULL DEFAULT 0,
+      notizen TEXT
+    )
+  ''';
 
   Database? _db;
 
@@ -65,6 +79,8 @@ class DatabaseHelper {
             leistung_kw INTEGER,
             erstzulassung_monat INTEGER,
             erstzulassung_jahr INTEGER,
+            archiviert INTEGER NOT NULL DEFAULT 0,
+            werkstatt_id TEXT,
             created_at TEXT NOT NULL,
             updated_at TEXT NOT NULL
           )
@@ -134,6 +150,7 @@ class DatabaseHelper {
           )
         ''');
         await db.execute(_createMaintenanceTasksTable);
+        await db.execute(_createWorkshopsTable);
         await db.execute(
           'CREATE INDEX idx_tire_sets_vehicle ON tire_sets(vehicle_id)',
         );
@@ -181,6 +198,22 @@ class DatabaseHelper {
         }
         if (oldVersion < 5) {
           await db.execute('ALTER TABLE vehicles ADD COLUMN halter TEXT');
+        }
+        if (oldVersion < 6) {
+          await db.execute(_createWorkshopsTable);
+          await db.execute(
+            'ALTER TABLE vehicles ADD COLUMN archiviert INTEGER NOT NULL DEFAULT 0',
+          );
+          await db.execute(
+            'ALTER TABLE vehicles ADD COLUMN werkstatt_id TEXT',
+          );
+          await db.execute(
+            'ALTER TABLE maintenance_tasks ADD COLUMN faellig_am TEXT',
+          );
+          await db.execute(
+            'ALTER TABLE maintenance_tasks ADD COLUMN erinnerung_tage_vorher '
+            'INTEGER NOT NULL DEFAULT 3',
+          );
         }
       },
     );
@@ -246,6 +279,16 @@ class DatabaseHelper {
       where: 'vehicle_id = ?',
       whereArgs: [vehicleId],
       orderBy: 'season',
+    );
+    return rows.map(TireSet.fromMap).toList();
+  }
+
+  Future<List<TireSet>> getAllTireSets() async {
+    final db = await database;
+    final rows = await db.query(
+      'tire_sets',
+      where: 'wechsel_faellig_am IS NOT NULL',
+      orderBy: 'wechsel_faellig_am',
     );
     return rows.map(TireSet.fromMap).toList();
   }
@@ -445,9 +488,66 @@ class DatabaseHelper {
     return rows.map(MaintenanceTask.fromMap).toList();
   }
 
+  Future<List<MaintenanceTask>> getAllOpenMaintenanceTasksWithDueDate() async {
+    final db = await database;
+    final rows = await db.query(
+      'maintenance_tasks',
+      where: 'erledigt = 0 AND faellig_am IS NOT NULL',
+      orderBy: 'faellig_am',
+    );
+    return rows.map(MaintenanceTask.fromMap).toList();
+  }
+
+  // ---------------- Werkstätten ----------------
+
+  Future<void> insertWorkshop(Workshop w) async {
+    final db = await database;
+    await db.insert(
+      'workshops',
+      w.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  Future<void> updateWorkshop(Workshop w) async {
+    final db = await database;
+    await db.update('workshops', w.toMap(), where: 'id = ?', whereArgs: [w.id]);
+  }
+
+  Future<void> deleteWorkshop(String id) async {
+    final db = await database;
+    await db.delete('workshops', where: 'id = ?', whereArgs: [id]);
+  }
+
+  Future<List<Workshop>> getAllWorkshops() async {
+    final db = await database;
+    final rows = await db.query('workshops', orderBy: 'name COLLATE NOCASE');
+    return rows.map(Workshop.fromMap).toList();
+  }
+
+  Future<Workshop?> getWorkshop(String id) async {
+    final db = await database;
+    final rows = await db.query('workshops', where: 'id = ?', whereArgs: [id]);
+    if (rows.isEmpty) return null;
+    return Workshop.fromMap(rows.first);
+  }
+
+  /// Löst die Verknüpfung aller Fahrzeuge, die auf die gelöschte Werkstatt
+  /// verweisen, ohne die Fahrzeuge selbst anzutasten.
+  Future<void> clearWerkstattReferences(String workshopId) async {
+    final db = await database;
+    await db.update(
+      'vehicles',
+      {'werkstatt_id': null},
+      where: 'werkstatt_id = ?',
+      whereArgs: [workshopId],
+    );
+  }
+
   // ---------------- Export / Import (Backup & Sync) ----------------
 
   static const backupTables = [
+    'workshops',
     'vehicles',
     'tire_sets',
     'inspections',
@@ -479,11 +579,16 @@ class DatabaseHelper {
     final db = await database;
     await db.transaction((txn) async {
       await txn.delete('vehicles');
+      await txn.delete('workshops');
       final batch = txn.batch();
+      for (final row in data['workshops'] ?? const []) {
+        batch.insert('workshops', row);
+      }
       for (final row in data['vehicles'] ?? const []) {
         batch.insert('vehicles', row);
       }
-      for (final table in backupTables.where((t) => t != 'vehicles')) {
+      for (final table
+          in backupTables.where((t) => t != 'vehicles' && t != 'workshops')) {
         for (final row in data[table] ?? const []) {
           batch.insert(table, row);
         }

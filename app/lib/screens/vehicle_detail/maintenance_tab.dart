@@ -77,10 +77,17 @@ class _MaintenanceTabState extends State<MaintenanceTab> {
                     subtitle: Text(
                       [
                         if (t.notizen != null && t.notizen!.isNotEmpty) t.notizen!,
+                        if (!t.erledigt && t.faelligAm != null)
+                          'fällig am ${t.faelligAm!.deDate}',
                         t.erledigt && t.erledigtAm != null
                             ? 'erledigt am ${t.erledigtAm!.deDate}'
                             : 'angelegt am ${t.erstelltAm.deDate}',
                       ].join(' · '),
+                      style: !t.erledigt &&
+                              t.faelligAm != null &&
+                              t.faelligAm!.isBefore(DateTime.now())
+                          ? const TextStyle(color: Colors.red)
+                          : null,
                     ),
                     trailing: PopupMenuButton<String>(
                       onSelected: (v) {
@@ -111,7 +118,11 @@ class _MaintenanceTabState extends State<MaintenanceTab> {
     final provider = context.read<FuhrparkProvider>();
     t.erledigt = value;
     t.erledigtAm = value ? DateTime.now() : null;
-    await provider.saveMaintenanceTask(t, isNew: false);
+    await provider.saveMaintenanceTask(
+      t,
+      widget.vehicle.anzeigename,
+      isNew: false,
+    );
     if (mounted) setState(_reload);
   }
 
@@ -148,6 +159,7 @@ class _MaintenanceTabState extends State<MaintenanceTab> {
       isScrollControlled: true,
       builder: (_) => _MaintenanceFormSheet(
         vehicleId: widget.vehicle.id,
+        vehicleName: widget.vehicle.anzeigename,
         existing: existing,
       ),
     );
@@ -162,9 +174,14 @@ class _MaintenanceTabState extends State<MaintenanceTab> {
 
 class _MaintenanceFormSheet extends StatefulWidget {
   final String vehicleId;
+  final String vehicleName;
   final MaintenanceTask? existing;
 
-  const _MaintenanceFormSheet({required this.vehicleId, this.existing});
+  const _MaintenanceFormSheet({
+    required this.vehicleId,
+    required this.vehicleName,
+    this.existing,
+  });
 
   @override
   State<_MaintenanceFormSheet> createState() => _MaintenanceFormSheetState();
@@ -173,6 +190,8 @@ class _MaintenanceFormSheet extends StatefulWidget {
 class _MaintenanceFormSheetState extends State<_MaintenanceFormSheet> {
   late final TextEditingController _titel;
   late final TextEditingController _notizen;
+  late final TextEditingController _erinnerungTage;
+  DateTime? _faelligAm;
   bool _saving = false;
 
   @override
@@ -181,6 +200,9 @@ class _MaintenanceFormSheetState extends State<_MaintenanceFormSheet> {
     final e = widget.existing;
     _titel = TextEditingController(text: e?.titel ?? '');
     _notizen = TextEditingController(text: e?.notizen ?? '');
+    _faelligAm = e?.faelligAm;
+    _erinnerungTage =
+        TextEditingController(text: (e?.erinnerungTageVorher ?? 3).toString());
   }
 
   @override
@@ -212,6 +234,42 @@ class _MaintenanceFormSheetState extends State<_MaintenanceFormSheet> {
                 hintText: 'z. B. Bremsbeläge Anhänger prüfen',
               ),
             ),
+            const SizedBox(height: 12),
+            InkWell(
+              onTap: () async {
+                final result = await showDatePicker(
+                  context: context,
+                  initialDate: _faelligAm ?? DateTime.now(),
+                  firstDate: DateTime(1970),
+                  lastDate: DateTime(2100),
+                );
+                if (result != null) setState(() => _faelligAm = result);
+              },
+              child: InputDecorator(
+                decoration: InputDecoration(
+                  labelText: 'Fällig am',
+                  suffixIcon: _faelligAm == null
+                      ? null
+                      : IconButton(
+                          icon: const Icon(Icons.clear),
+                          onPressed: () => setState(() => _faelligAm = null),
+                        ),
+                ),
+                child: Text(
+                  _faelligAm == null ? '– kein Termin –' : _faelligAm!.deDate,
+                ),
+              ),
+            ),
+            if (_faelligAm != null) ...[
+              const SizedBox(height: 12),
+              TextField(
+                controller: _erinnerungTage,
+                decoration: const InputDecoration(
+                  labelText: 'Erinnerung (Tage vorher)',
+                ),
+                keyboardType: TextInputType.number,
+              ),
+            ],
             const SizedBox(height: 12),
             TextField(
               controller: _notizen,
@@ -254,8 +312,14 @@ class _MaintenanceFormSheetState extends State<_MaintenanceFormSheet> {
         erledigt: widget.existing?.erledigt ?? false,
         erstelltAm: widget.existing?.erstelltAm ?? DateTime.now(),
         erledigtAm: widget.existing?.erledigtAm,
+        faelligAm: _faelligAm,
+        erinnerungTageVorher: int.tryParse(_erinnerungTage.text.trim()) ?? 3,
       );
-      await provider.saveMaintenanceTask(task, isNew: widget.existing == null);
+      await provider.saveMaintenanceTask(
+        task,
+        widget.vehicleName,
+        isNew: widget.existing == null,
+      );
       if (mounted) Navigator.of(context).pop(true);
     } finally {
       if (mounted) setState(() => _saving = false);

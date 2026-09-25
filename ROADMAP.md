@@ -24,6 +24,10 @@
 - [x] Fester, dauerhafter APK-Signatur-Keystore, direkt im App-Modul referenziert statt über einen sich als nicht zuverlässig erwiesenen impliziten Konventionspfad
 - [x] `android/`-Ordner fest im Repo statt bei jedem CI-Lauf neu generiert - reproduzierbare, direkt inspizierbare Builds; Flutter-Version im CI fest gepinnt
 - [x] Datenblatt-Export (PDF, DIN A4) pro Fahrzeug für die physische Papierablage - Stammdaten, Termine, Reifen, Vignetten, Versicherungen, ohne Dokumente/Fotos aus der Galerie
+- [x] Fahrzeug-Archivierung (verkauft/stillgelegt): Fahrzeug wird aus der aktiven Flotte ausgeblendet, Daten/Historie bleiben erhalten und sind über "Archivierte Fahrzeuge" weiterhin einsehbar; archivierte Fahrzeuge erzeugen keine Erinnerungen mehr
+- [x] Reifenwechsel-Erinnerung (lokale Benachrichtigung 14 Tage vor `wechselFaelligAm`, analog Vignette/Versicherung) + Eintrag in "Anstehende Termine"
+- [x] Werkstätten-Verwaltung (eigenes Menü): mehrere Werkstätten mit Name/Telefon/Adresse, Kennzeichnung als §57a-Prüfstelle, Zuordnung zu einem Fahrzeug (nur PKW)
+- [x] Wartungs-To-Dos: optionales Fälligkeitsdatum + Erinnerung (Tage vorher), erscheinen dann ebenfalls in "Anstehende Termine"
 
 ## Offen
 - [ ] Google-Cloud-Projekt + OAuth-Client gemäß README einrichten und Login/Upload/Restore einmal real durchtesten

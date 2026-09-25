@@ -66,6 +66,10 @@ class RemindersScreen extends StatelessWidget {
         return Icons.confirmation_number_outlined;
       case ReminderSource.insurance:
         return Icons.shield_outlined;
+      case ReminderSource.tire:
+        return Icons.tire_repair_outlined;
+      case ReminderSource.maintenance:
+        return Icons.build_outlined;
     }
   }
 

@@ -10,10 +10,12 @@ import '../services/document_storage.dart';
 import '../services/local_backup_service.dart';
 import '../services/share_import_service.dart';
 import '../widgets/empty_state.dart';
+import 'archived_vehicles_screen.dart';
 import 'backup_screen.dart';
 import 'reminders_screen.dart';
 import 'vehicle_detail_screen.dart';
 import 'vehicle_form_screen.dart';
+import 'workshops_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -124,6 +126,20 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           IconButton(
+            icon: const Icon(Icons.home_repair_service_outlined),
+            tooltip: 'Werkstätten',
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const WorkshopsScreen()),
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.archive_outlined),
+            tooltip: 'Archivierte Fahrzeuge',
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const ArchivedVehiclesScreen()),
+            ),
+          ),
+          IconButton(
             icon: const Icon(Icons.cloud_outlined),
             tooltip: 'Backup & Cloud-Sync',
             onPressed: () => Navigator.of(context).push(
@@ -137,7 +153,9 @@ class _HomeScreenState extends State<HomeScreen> {
           if (provider.loading) {
             return const Center(child: CircularProgressIndicator());
           }
-          if (provider.vehicles.isEmpty) {
+          final aktiveFahrzeuge =
+              provider.vehicles.where((v) => !v.archiviert).toList();
+          if (aktiveFahrzeuge.isEmpty) {
             return EmptyState(
               icon: Icons.directions_car_outlined,
               text:
@@ -149,7 +167,7 @@ class _HomeScreenState extends State<HomeScreen> {
           }
           return RefreshIndicator(
             onRefresh: provider.loadVehicles,
-            child: _GroupedVehicleList(vehicles: provider.vehicles),
+            child: _GroupedVehicleList(vehicles: aktiveFahrzeuge),
           );
         },
       ),

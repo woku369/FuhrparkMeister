@@ -58,6 +58,8 @@ class Vehicle {
   int? leistungKw;
   int? erstzulassungMonat;
   int? erstzulassungJahr;
+  bool archiviert;
+  String? werkstattId;
   final DateTime createdAt;
   DateTime updatedAt;
 
@@ -81,6 +83,8 @@ class Vehicle {
     this.leistungKw,
     this.erstzulassungMonat,
     this.erstzulassungJahr,
+    this.archiviert = false,
+    this.werkstattId,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -110,6 +114,8 @@ class Vehicle {
       'leistung_kw': leistungKw,
       'erstzulassung_monat': erstzulassungMonat,
       'erstzulassung_jahr': erstzulassungJahr,
+      'archiviert': archiviert ? 1 : 0,
+      'werkstatt_id': werkstattId,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
     };
@@ -141,6 +147,8 @@ class Vehicle {
       leistungKw: map['leistung_kw'] as int?,
       erstzulassungMonat: map['erstzulassung_monat'] as int?,
       erstzulassungJahr: map['erstzulassung_jahr'] as int?,
+      archiviert: (map['archiviert'] as int? ?? 0) == 1,
+      werkstattId: map['werkstatt_id'] as String?,
       createdAt: DateTime.parse(map['created_at'] as String),
       updatedAt: DateTime.parse(map['updated_at'] as String),
     );

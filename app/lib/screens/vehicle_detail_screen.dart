@@ -49,6 +49,13 @@ class VehicleDetailScreen extends StatelessWidget {
               onPressed: () => _exportHistory(context, v),
             ),
             IconButton(
+              icon: Icon(
+                v.archiviert ? Icons.unarchive_outlined : Icons.archive_outlined,
+              ),
+              tooltip: v.archiviert ? 'Reaktivieren' : 'Archivieren',
+              onPressed: () => _toggleArchiviert(context, v),
+            ),
+            IconButton(
               icon: const Icon(Icons.edit_outlined),
               onPressed: () async {
                 final result = await Navigator.of(context).push<bool>(
@@ -92,6 +99,45 @@ class VehicleDetailScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Future<void> _toggleArchiviert(BuildContext context, Vehicle vehicle) async {
+    final wirdArchiviert = !vehicle.archiviert;
+    if (wirdArchiviert) {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Fahrzeug archivieren?'),
+          content: Text(
+            '${vehicle.anzeigename} wird aus der aktiven Flotte ausgeblendet. '
+            'Alle Daten und die Historie bleiben erhalten und sind über '
+            '"Archivierte Fahrzeuge" weiterhin einsehbar.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: const Text('Abbrechen'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(ctx).pop(true),
+              child: const Text('Archivieren'),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true) return;
+    }
+    vehicle.archiviert = wirdArchiviert;
+    await context.read<FuhrparkProvider>().updateVehicle(vehicle);
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            wirdArchiviert ? 'Fahrzeug archiviert' : 'Fahrzeug reaktiviert',
+          ),
+        ),
+      );
+    }
   }
 
   Future<void> _exportSheet(BuildContext context, Vehicle vehicle) async {

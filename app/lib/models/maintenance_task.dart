@@ -1,7 +1,8 @@
 /// Laufende Wartungs-To-Do: Dinge, die auffallen oder geplant sind, aber
 /// nicht an eine gesetzliche Prüffrist (§57a etc.) gebunden sind - z. B.
 /// "Bremsbeläge Anhänger prüfen" oder "Anhängerkupplung fettet nicht mehr".
-/// Bewusst ohne Fälligkeitsdatum/Erinnerung, dafür siehe Inspection.
+/// Optional mit Fälligkeitsdatum + Erinnerung, falls doch ein Termin
+/// dahintersteckt - für reine Prüffristen weiterhin siehe Inspection.
 class MaintenanceTask {
   final String id;
   final String vehicleId;
@@ -10,6 +11,8 @@ class MaintenanceTask {
   bool erledigt;
   final DateTime erstelltAm;
   DateTime? erledigtAm;
+  DateTime? faelligAm;
+  int erinnerungTageVorher;
 
   MaintenanceTask({
     required this.id,
@@ -19,6 +22,8 @@ class MaintenanceTask {
     this.erledigt = false,
     required this.erstelltAm,
     this.erledigtAm,
+    this.faelligAm,
+    this.erinnerungTageVorher = 3,
   });
 
   Map<String, Object?> toMap() {
@@ -30,6 +35,8 @@ class MaintenanceTask {
       'erledigt': erledigt ? 1 : 0,
       'erstellt_am': erstelltAm.toIso8601String(),
       'erledigt_am': erledigtAm?.toIso8601String(),
+      'faellig_am': faelligAm?.toIso8601String(),
+      'erinnerung_tage_vorher': erinnerungTageVorher,
     };
   }
 
@@ -44,6 +51,10 @@ class MaintenanceTask {
       erledigtAm: map['erledigt_am'] != null
           ? DateTime.parse(map['erledigt_am'] as String)
           : null,
+      faelligAm: map['faellig_am'] != null
+          ? DateTime.parse(map['faellig_am'] as String)
+          : null,
+      erinnerungTageVorher: map['erinnerung_tage_vorher'] as int? ?? 3,
     );
   }
 }

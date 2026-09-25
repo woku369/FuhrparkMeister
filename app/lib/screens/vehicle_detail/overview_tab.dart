@@ -1,8 +1,11 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../../models/vehicle.dart';
+import '../../models/workshop.dart';
+import '../../providers/fuhrpark_provider.dart';
 import '../../services/document_storage.dart';
 import '../../widgets/date_format_x.dart';
 
@@ -77,6 +80,8 @@ class OverviewTab extends StatelessWidget {
                 ],
               ),
             ),
+        if (vehicle.werkstattId != null)
+          _WerkstattRow(werkstattId: vehicle.werkstattId!),
         if (vehicle.notizen != null && vehicle.notizen!.isNotEmpty) ...[
           const Divider(height: 32),
           const Text('Notizen', style: TextStyle(fontWeight: FontWeight.w600)),
@@ -84,6 +89,39 @@ class OverviewTab extends StatelessWidget {
           Text(vehicle.notizen!),
         ],
       ],
+    );
+  }
+}
+
+class _WerkstattRow extends StatelessWidget {
+  final String werkstattId;
+
+  const _WerkstattRow({required this.werkstattId});
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<Workshop?>(
+      future: context.read<FuhrparkProvider>().getWorkshop(werkstattId),
+      builder: (context, snap) {
+        final name = snap.data?.name;
+        if (name == null) return const SizedBox.shrink();
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 6),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(
+                width: 180,
+                child: Text(
+                  'Werkstatt',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+              ),
+              Expanded(child: Text(name)),
+            ],
+          ),
+        );
+      },
     );
   }
 }

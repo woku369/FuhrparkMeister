@@ -141,7 +141,11 @@ class _TiresTabState extends State<TiresTab> {
     final result = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
-      builder: (_) => _TireFormSheet(vehicleId: widget.vehicle.id, existing: existing),
+      builder: (_) => _TireFormSheet(
+        vehicleId: widget.vehicle.id,
+        vehicleName: widget.vehicle.anzeigename,
+        existing: existing,
+      ),
     );
     if (result == true && mounted) {
       setState(_reload);
@@ -154,9 +158,14 @@ class _TiresTabState extends State<TiresTab> {
 
 class _TireFormSheet extends StatefulWidget {
   final String vehicleId;
+  final String vehicleName;
   final TireSet? existing;
 
-  const _TireFormSheet({required this.vehicleId, this.existing});
+  const _TireFormSheet({
+    required this.vehicleId,
+    required this.vehicleName,
+    this.existing,
+  });
 
   @override
   State<_TireFormSheet> createState() => _TireFormSheetState();
@@ -297,7 +306,11 @@ class _TireFormSheetState extends State<_TireFormSheet> {
         wechselFaelligAm: _wechselFaelligAm,
         notizen: _notizen.text.trim().isEmpty ? null : _notizen.text.trim(),
       );
-      await provider.saveTireSet(tireSet, isNew: widget.existing == null);
+      await provider.saveTireSet(
+        tireSet,
+        widget.vehicleName,
+        isNew: widget.existing == null,
+      );
       if (mounted) Navigator.of(context).pop(true);
     } finally {
       if (mounted) setState(() => _saving = false);

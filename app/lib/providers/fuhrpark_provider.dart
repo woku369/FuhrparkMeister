@@ -10,10 +10,12 @@ import '../models/tire_set.dart';
 import '../models/vehicle.dart';
 import '../models/vehicle_document.dart';
 import '../models/vignette.dart';
+import '../models/workshop.dart';
 import '../services/notification_service.dart';
 
 const _uuid = Uuid();
 const _vignetteInsuranceReminderTage = 14;
+const _tireReminderTage = 14;
 
 /// Zentraler App-State: hält die Fahrzeugliste und kapselt alle
 /// Datenbank-Zugriffe samt Planung der lokalen Erinnerungen.
@@ -55,6 +57,7 @@ class FuhrparkProvider extends ChangeNotifier {
     int? leistungKw,
     int? erstzulassungMonat,
     int? erstzulassungJahr,
+    String? werkstattId,
   }) async {
     final now = DateTime.now();
     final vehicle = Vehicle(
@@ -77,6 +80,7 @@ class FuhrparkProvider extends ChangeNotifier {
       leistungKw: leistungKw,
       erstzulassungMonat: erstzulassungMonat,
       erstzulassungJahr: erstzulassungJahr,
+      werkstattId: werkstattId,
       createdAt: now,
       updatedAt: now,
     );
@@ -95,6 +99,8 @@ class FuhrparkProvider extends ChangeNotifier {
     final inspections = await _db.getInspectionsForVehicle(id);
     final vignettes = await _db.getVignettesForVehicle(id);
     final insurances = await _db.getInsurancesForVehicle(id);
+    final tireSets = await _db.getTireSetsForVehicle(id);
+    final maintenanceTasks = await _db.getMaintenanceTasksForVehicle(id);
     try {
       for (final i in inspections) {
         await NotificationService.instance.cancelReminder(i.id);
@@ -104,6 +110,12 @@ class FuhrparkProvider extends ChangeNotifier {
       }
       for (final i in insurances) {
         await NotificationService.instance.cancelReminder(i.id);
+      }
+      for (final t in tireSets) {
+        await NotificationService.instance.cancelReminder(t.id);
+      }
+      for (final m in maintenanceTasks) {
+        await NotificationService.instance.cancelReminder(m.id);
       }
     } catch (_) {
       // Erinnerungen sind nur eine Zusatzfunktion - ein Fehler hier darf
@@ -118,17 +130,46 @@ class FuhrparkProvider extends ChangeNotifier {
   Future<List<TireSet>> tireSetsFor(String vehicleId) =>
       _db.getTireSetsForVehicle(vehicleId);
 
-  Future<void> saveTireSet(TireSet tireSet, {required bool isNew}) async {
+  Future<void> saveTireSet(
+    TireSet tireSet,
+    String vehicleName, {
+    required bool isNew,
+  }) async {
     if (isNew) {
       await _db.insertTireSet(tireSet);
     } else {
       await _db.updateTireSet(tireSet);
+    }
+    try {
+      await NotificationService.instance.cancelReminder(tireSet.id);
+      final wechselFaelligAm = tireSet.wechselFaelligAm;
+      if (wechselFaelligAm != null) {
+        final erinnerungAm = wechselFaelligAm.subtract(
+          const Duration(days: _tireReminderTage),
+        );
+        await NotificationService.instance.scheduleReminder(
+          sourceId: tireSet.id,
+          title: 'Reifenwechsel fällig',
+          body:
+              '$vehicleName · ${tireSet.season.label} · fällig ab '
+              '${_formatDate(wechselFaelligAm)}',
+          scheduledDate: erinnerungAm,
+        );
+      }
+    } catch (_) {
+      // Erinnerung ist nur eine Zusatzfunktion - darf den Speichervorgang
+      // (und damit den Rücksprung im UI) nicht blockieren.
     }
     notifyListeners();
   }
 
   Future<void> deleteTireSet(String id) async {
     await _db.deleteTireSet(id);
+    try {
+      await NotificationService.instance.cancelReminder(id);
+    } catch (_) {
+      // siehe Kommentar in saveTireSet
+    }
     notifyListeners();
   }
 
@@ -301,7 +342,8 @@ class FuhrparkProvider extends ChangeNotifier {
       _db.getMaintenanceTasksForVehicle(vehicleId);
 
   Future<void> saveMaintenanceTask(
-    MaintenanceTask task, {
+    MaintenanceTask task,
+    String vehicleName, {
     required bool isNew,
   }) async {
     if (isNew) {
@@ -309,12 +351,56 @@ class FuhrparkProvider extends ChangeNotifier {
     } else {
       await _db.updateMaintenanceTask(task);
     }
+    try {
+      await NotificationService.instance.cancelReminder(task.id);
+      final faelligAm = task.faelligAm;
+      if (!task.erledigt && faelligAm != null) {
+        final erinnerungAm = faelligAm.subtract(
+          Duration(days: task.erinnerungTageVorher),
+        );
+        await NotificationService.instance.scheduleReminder(
+          sourceId: task.id,
+          title: task.titel,
+          body: '$vehicleName · fällig am ${_formatDate(faelligAm)}',
+          scheduledDate: erinnerungAm,
+        );
+      }
+    } catch (_) {
+      // Erinnerung ist nur eine Zusatzfunktion - darf den Speichervorgang
+      // (und damit den Rücksprung im UI) nicht blockieren.
+    }
     notifyListeners();
   }
 
   Future<void> deleteMaintenanceTask(String id) async {
     await _db.deleteMaintenanceTask(id);
+    try {
+      await NotificationService.instance.cancelReminder(id);
+    } catch (_) {
+      // siehe Kommentar in saveMaintenanceTask
+    }
     notifyListeners();
+  }
+
+  // ---------------- Werkstätten ----------------
+
+  Future<List<Workshop>> getWorkshops() => _db.getAllWorkshops();
+
+  Future<Workshop?> getWorkshop(String id) => _db.getWorkshop(id);
+
+  Future<void> saveWorkshop(Workshop workshop, {required bool isNew}) async {
+    if (isNew) {
+      await _db.insertWorkshop(workshop);
+    } else {
+      await _db.updateWorkshop(workshop);
+    }
+    notifyListeners();
+  }
+
+  Future<void> deleteWorkshop(String id) async {
+    await _db.deleteWorkshop(id);
+    await _db.clearWerkstattReferences(id);
+    await loadVehicles();
   }
 
   // ---------------- Übersicht: anstehende Termine ----------------
@@ -326,7 +412,7 @@ class FuhrparkProvider extends ChangeNotifier {
     final inspections = await _db.getAllOpenInspections();
     for (final i in inspections) {
       final vehicle = vehiclesById[i.vehicleId];
-      if (vehicle == null) continue;
+      if (vehicle == null || vehicle.archiviert) continue;
       reminders.add(
         Reminder(
           source: ReminderSource.inspection,
@@ -342,7 +428,7 @@ class FuhrparkProvider extends ChangeNotifier {
     final vignettes = await _db.getAllVignettes();
     for (final v in vignettes) {
       final vehicle = vehiclesById[v.vehicleId];
-      if (vehicle == null) continue;
+      if (vehicle == null || vehicle.archiviert) continue;
       reminders.add(
         Reminder(
           source: ReminderSource.vignette,
@@ -360,7 +446,7 @@ class FuhrparkProvider extends ChangeNotifier {
       final naechsteFaelligkeit = i.naechsteFaelligkeit;
       if (naechsteFaelligkeit == null) continue;
       final vehicle = vehiclesById[i.vehicleId];
-      if (vehicle == null) continue;
+      if (vehicle == null || vehicle.archiviert) continue;
       reminders.add(
         Reminder(
           source: ReminderSource.insurance,
@@ -369,6 +455,42 @@ class FuhrparkProvider extends ChangeNotifier {
           vehicleName: vehicle.anzeigename,
           titel: 'Versicherung ${i.gesellschaft}',
           faelligAm: naechsteFaelligkeit,
+        ),
+      );
+    }
+
+    final tireSets = await _db.getAllTireSets();
+    for (final t in tireSets) {
+      final wechselFaelligAm = t.wechselFaelligAm;
+      if (wechselFaelligAm == null) continue;
+      final vehicle = vehiclesById[t.vehicleId];
+      if (vehicle == null || vehicle.archiviert) continue;
+      reminders.add(
+        Reminder(
+          source: ReminderSource.tire,
+          sourceId: t.id,
+          vehicleId: vehicle.id,
+          vehicleName: vehicle.anzeigename,
+          titel: 'Reifenwechsel (${t.season.label})',
+          faelligAm: wechselFaelligAm,
+        ),
+      );
+    }
+
+    final maintenanceTasks = await _db.getAllOpenMaintenanceTasksWithDueDate();
+    for (final m in maintenanceTasks) {
+      final faelligAm = m.faelligAm;
+      if (faelligAm == null) continue;
+      final vehicle = vehiclesById[m.vehicleId];
+      if (vehicle == null || vehicle.archiviert) continue;
+      reminders.add(
+        Reminder(
+          source: ReminderSource.maintenance,
+          sourceId: m.id,
+          vehicleId: vehicle.id,
+          vehicleName: vehicle.anzeigename,
+          titel: m.titel,
+          faelligAm: faelligAm,
         ),
       );
     }

@@ -6,6 +6,7 @@ import 'package:path/path.dart' as p;
 import 'package:provider/provider.dart';
 
 import '../models/vehicle.dart';
+import '../models/workshop.dart';
 import '../providers/fuhrpark_provider.dart';
 import '../services/document_storage.dart';
 import '../widgets/date_format_x.dart';
@@ -48,6 +49,9 @@ class _VehicleFormScreenState extends State<VehicleFormScreen> {
   XFile? _neuesFoto;
   bool _fotoEntfernen = false;
 
+  List<Workshop> _workshops = [];
+  String? _werkstattId;
+
   bool get _isEdit => widget.vehicle != null;
 
   @override
@@ -55,6 +59,10 @@ class _VehicleFormScreenState extends State<VehicleFormScreen> {
     super.initState();
     final v = widget.vehicle;
     _type = v?.type ?? VehicleType.auto;
+    _werkstattId = v?.werkstattId;
+    context.read<FuhrparkProvider>().getWorkshops().then((workshops) {
+      if (mounted) setState(() => _workshops = workshops);
+    });
     _name = TextEditingController(text: v?.name ?? '');
     _marke = TextEditingController(text: v?.marke ?? '');
     _modell = TextEditingController(text: v?.modell ?? '');
@@ -245,6 +253,23 @@ class _VehicleFormScreenState extends State<VehicleFormScreen> {
                     ),
                   ),
                 ],
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<String?>(
+                initialValue: _werkstattId,
+                decoration: const InputDecoration(labelText: 'Werkstatt'),
+                items: [
+                  const DropdownMenuItem<String?>(
+                    value: null,
+                    child: Text('– keine –'),
+                  ),
+                  for (final w in _workshops)
+                    DropdownMenuItem<String?>(
+                      value: w.id,
+                      child: Text(w.name),
+                    ),
+                ],
+                onChanged: (id) => setState(() => _werkstattId = id),
               ),
             ],
             const SizedBox(height: 12),
@@ -454,6 +479,7 @@ class _VehicleFormScreenState extends State<VehicleFormScreen> {
         v.erstzulassungJahr = _type == VehicleType.auto
             ? int.tryParse(_erstzulassungJahr.text.trim())
             : null;
+        v.werkstattId = _type == VehicleType.auto ? _werkstattId : null;
         v.fotoPfad = await _persistFoto(v.id, v.fotoPfad);
         await provider.updateVehicle(v);
       } else {
@@ -484,6 +510,7 @@ class _VehicleFormScreenState extends State<VehicleFormScreen> {
           erstzulassungJahr: _type == VehicleType.auto
               ? int.tryParse(_erstzulassungJahr.text.trim())
               : null,
+          werkstattId: _type == VehicleType.auto ? _werkstattId : null,
         );
         final fotoPfad = await _persistFoto(v.id, null);
         if (fotoPfad != null) {
