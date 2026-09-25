@@ -149,15 +149,7 @@ class _HomeScreenState extends State<HomeScreen> {
           }
           return RefreshIndicator(
             onRefresh: provider.loadVehicles,
-            child: ListView.separated(
-              padding: const EdgeInsets.all(12),
-              itemCount: provider.vehicles.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 8),
-              itemBuilder: (context, index) {
-                final vehicle = provider.vehicles[index];
-                return _VehicleCard(vehicle: vehicle);
-              },
-            ),
+            child: _GroupedVehicleList(vehicles: provider.vehicles),
           );
         },
       ),
@@ -177,6 +169,69 @@ class _HomeScreenState extends State<HomeScreen> {
         const SnackBar(content: Text('Fahrzeug gespeichert')),
       );
     }
+  }
+}
+
+/// Gruppiert die Fahrzeugliste nach Typ (Auto, Anhänger, Fahrrad, ...) mit
+/// Abschnittsüberschriften - bei mehreren Fahrzeugtypen sonst schnell
+/// unübersichtlich. Reihenfolge folgt VehicleType.values, leere Kategorien
+/// werden ausgeblendet.
+class _GroupedVehicleList extends StatelessWidget {
+  final List<Vehicle> vehicles;
+
+  const _GroupedVehicleList({required this.vehicles});
+
+  @override
+  Widget build(BuildContext context) {
+    final grouped = <VehicleType, List<Vehicle>>{};
+    for (final v in vehicles) {
+      grouped.putIfAbsent(v.type, () => []).add(v);
+    }
+
+    final children = <Widget>[];
+    for (final type in VehicleType.values) {
+      final group = grouped[type];
+      if (group == null || group.isEmpty) continue;
+      if (children.isNotEmpty) children.add(const SizedBox(height: 20));
+      children.add(_CategoryHeader(type: type, count: group.length));
+      for (final vehicle in group) {
+        children.add(const SizedBox(height: 8));
+        children.add(_VehicleCard(vehicle: vehicle));
+      }
+    }
+
+    return ListView(
+      padding: const EdgeInsets.all(12),
+      children: children,
+    );
+  }
+}
+
+class _CategoryHeader extends StatelessWidget {
+  final VehicleType type;
+  final int count;
+
+  const _CategoryHeader({required this.type, required this.count});
+
+  @override
+  Widget build(BuildContext context) {
+    final color = Theme.of(context).colorScheme.primary;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      child: Row(
+        children: [
+          Icon(type.icon, size: 20, color: color),
+          const SizedBox(width: 8),
+          Text(
+            '${type.label} ($count)',
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: color,
+                ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
