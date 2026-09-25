@@ -23,6 +23,7 @@ class OverviewTab extends StatelessWidget {
       ('Marke', vehicle.marke),
       ('Modell', vehicle.modell),
       ('Kennzeichen', vehicle.kennzeichen),
+      ('Halter', vehicle.halter),
       ('Fahrgestellnummer', vehicle.fahrgestellnummer),
       ('Baujahr', vehicle.baujahr?.toString()),
       ('Erstzulassung', erstzulassung),

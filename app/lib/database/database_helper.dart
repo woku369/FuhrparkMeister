@@ -14,7 +14,7 @@ class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._();
 
   static const _dbName = 'fuhrparkmeister.db';
-  static const _dbVersion = 4;
+  static const _dbVersion = 5;
 
   static const _createMaintenanceTasksTable = '''
     CREATE TABLE maintenance_tasks (
@@ -52,6 +52,7 @@ class DatabaseHelper {
             marke TEXT,
             modell TEXT,
             kennzeichen TEXT,
+            halter TEXT,
             fahrgestellnummer TEXT,
             baujahr INTEGER,
             farbe TEXT,
@@ -177,6 +178,9 @@ class DatabaseHelper {
           await db.execute(
             'ALTER TABLE insurances ADD COLUMN zahlungsintervall TEXT',
           );
+        }
+        if (oldVersion < 5) {
+          await db.execute('ALTER TABLE vehicles ADD COLUMN halter TEXT');
         }
       },
     );

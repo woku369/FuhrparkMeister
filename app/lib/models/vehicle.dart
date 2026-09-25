@@ -45,6 +45,7 @@ class Vehicle {
   String? marke;
   String? modell;
   String? kennzeichen;
+  String? halter;
   String? fahrgestellnummer;
   int? baujahr;
   String? farbe;
@@ -67,6 +68,7 @@ class Vehicle {
     this.marke,
     this.modell,
     this.kennzeichen,
+    this.halter,
     this.fahrgestellnummer,
     this.baujahr,
     this.farbe,
@@ -95,6 +97,7 @@ class Vehicle {
       'marke': marke,
       'modell': modell,
       'kennzeichen': kennzeichen,
+      'halter': halter,
       'fahrgestellnummer': fahrgestellnummer,
       'baujahr': baujahr,
       'farbe': farbe,
@@ -123,6 +126,7 @@ class Vehicle {
       marke: map['marke'] as String?,
       modell: map['modell'] as String?,
       kennzeichen: map['kennzeichen'] as String?,
+      halter: map['halter'] as String?,
       fahrgestellnummer: map['fahrgestellnummer'] as String?,
       baujahr: map['baujahr'] as int?,
       farbe: map['farbe'] as String?,

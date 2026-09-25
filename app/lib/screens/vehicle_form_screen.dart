@@ -29,6 +29,7 @@ class _VehicleFormScreenState extends State<VehicleFormScreen> {
   late final TextEditingController _marke;
   late final TextEditingController _modell;
   late final TextEditingController _kennzeichen;
+  late final TextEditingController _halter;
   late final TextEditingController _fahrgestellnummer;
   late final TextEditingController _baujahr;
   late final TextEditingController _farbe;
@@ -58,6 +59,7 @@ class _VehicleFormScreenState extends State<VehicleFormScreen> {
     _marke = TextEditingController(text: v?.marke ?? '');
     _modell = TextEditingController(text: v?.modell ?? '');
     _kennzeichen = TextEditingController(text: v?.kennzeichen ?? '');
+    _halter = TextEditingController(text: v?.halter ?? '');
     _fahrgestellnummer = TextEditingController(text: v?.fahrgestellnummer ?? '');
     _baujahr = TextEditingController(text: v?.baujahr?.toString() ?? '');
     _farbe = TextEditingController(text: v?.farbe ?? '');
@@ -78,6 +80,7 @@ class _VehicleFormScreenState extends State<VehicleFormScreen> {
     _marke.dispose();
     _modell.dispose();
     _kennzeichen.dispose();
+    _halter.dispose();
     _fahrgestellnummer.dispose();
     _baujahr.dispose();
     _farbe.dispose();
@@ -168,6 +171,12 @@ class _VehicleFormScreenState extends State<VehicleFormScreen> {
               controller: _kennzeichen,
               decoration: const InputDecoration(labelText: 'Kennzeichen'),
               textCapitalization: TextCapitalization.characters,
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _halter,
+              decoration: const InputDecoration(labelText: 'Halter'),
+              textCapitalization: TextCapitalization.words,
             ),
             const SizedBox(height: 12),
             TextFormField(
@@ -418,6 +427,7 @@ class _VehicleFormScreenState extends State<VehicleFormScreen> {
         v.modell = _modell.text.trim().isEmpty ? null : _modell.text.trim();
         v.kennzeichen =
             _kennzeichen.text.trim().isEmpty ? null : _kennzeichen.text.trim();
+        v.halter = _halter.text.trim().isEmpty ? null : _halter.text.trim();
         v.fahrgestellnummer = _fahrgestellnummer.text.trim().isEmpty
             ? null
             : _fahrgestellnummer.text.trim();
@@ -447,6 +457,7 @@ class _VehicleFormScreenState extends State<VehicleFormScreen> {
           modell: _modell.text.trim().isEmpty ? null : _modell.text.trim(),
           kennzeichen:
               _kennzeichen.text.trim().isEmpty ? null : _kennzeichen.text.trim(),
+          halter: _halter.text.trim().isEmpty ? null : _halter.text.trim(),
           fahrgestellnummer: _fahrgestellnummer.text.trim().isEmpty
               ? null
               : _fahrgestellnummer.text.trim(),
