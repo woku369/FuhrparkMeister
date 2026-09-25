@@ -5,6 +5,7 @@ import 'package:share_plus/share_plus.dart';
 import '../models/vehicle.dart';
 import '../providers/fuhrpark_provider.dart';
 import '../services/history_export_service.dart';
+import '../services/vehicle_sheet_export_service.dart';
 import 'vehicle_detail/documents_tab.dart';
 import 'vehicle_detail/inspections_tab.dart';
 import 'vehicle_detail/maintenance_tab.dart';
@@ -37,6 +38,11 @@ class VehicleDetailScreen extends StatelessWidget {
         appBar: AppBar(
           title: Text(v.anzeigename),
           actions: [
+            IconButton(
+              icon: const Icon(Icons.picture_as_pdf_outlined),
+              tooltip: 'Datenblatt (PDF) für Papierablage',
+              onPressed: () => _exportSheet(context, v),
+            ),
             IconButton(
               icon: const Icon(Icons.history_outlined),
               tooltip: 'Wartungshistorie teilen',
@@ -86,6 +92,24 @@ class VehicleDetailScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Future<void> _exportSheet(BuildContext context, Vehicle vehicle) async {
+    try {
+      final file = await VehicleSheetExportService.exportPdfFor(vehicle);
+      await SharePlus.instance.share(
+        ShareParams(
+          files: [XFile(file.path)],
+          text: 'Datenblatt ${vehicle.anzeigename}',
+        ),
+      );
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Export fehlgeschlagen: $e')),
+        );
+      }
+    }
   }
 
   Future<void> _exportHistory(BuildContext context, Vehicle vehicle) async {
