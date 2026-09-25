@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../models/vehicle.dart';
 import '../providers/fuhrpark_provider.dart';
 import '../widgets/empty_state.dart';
 import 'vehicle_detail_screen.dart';

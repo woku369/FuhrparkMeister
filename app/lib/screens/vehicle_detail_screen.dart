@@ -125,7 +125,7 @@ class VehicleDetailScreen extends StatelessWidget {
           ],
         ),
       );
-      if (confirmed != true) return;
+      if (confirmed != true || !context.mounted) return;
     }
     vehicle.archiviert = wirdArchiviert;
     await context.read<FuhrparkProvider>().updateVehicle(vehicle);
